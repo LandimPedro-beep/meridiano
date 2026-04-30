@@ -1,6 +1,5 @@
 RSS_FEEDS = [
-    "https://pubmed.ncbi.nlm.nih.gov/rss/search/1bW22bWbsywmxnI5OafhsCiC-_yEjR_i8OpxhvlUs2R2mcwYza/?limit=15&utm_campaign=pubmed-2&fc=20260430091041",  # Cofilina 1 PubMed
-
+    "https://export.arxiv.org/rss/q-bio.BM",  # Bioquímica-ARXIV
 ]
 
 pt_br = " Responda em português brasileiro."
