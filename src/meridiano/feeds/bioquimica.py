@@ -1,5 +1,5 @@
 RSS_FEEDS = [
-    "https://export.arxiv.org/rss/q-bio.BM",  # Bioquímica-ARXIV
+    "http://feeds.nature.com/nature/rss/current",  # Nature
 ]
 
 pt_br = " Responda em português brasileiro."
