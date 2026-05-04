@@ -39,6 +39,11 @@
         <span class="article-meta">
           ({{ article['feed_source'] | default("Unknown Source") }} / {{ article['published_date'] | datetimeformat }})
         </span>
+        {% if article.keyword_labels_list %}
+        <div class="article-meta">
+          Labels: {{ article.keyword_labels_list | join(', ') }}
+        </div>
+        {% endif %}
         <div class="article-summary-list">{{ article['processed_content_html'] | safe }}</div>
     </div>
 </li>

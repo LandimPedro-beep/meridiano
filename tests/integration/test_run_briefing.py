@@ -99,7 +99,9 @@ def test_full_workflow(mock_fetch, mock_parse, setup_integration):
         messages = kwargs.get("messages", [])
         user_content = messages[-1]["content"] if messages else ""
 
-        if "Summarize" in user_content:
+        if "valid JSON" in user_content or "JSON válido" in user_content:
+            return {"choices": [{"message": {"content": '{"labels":["science","biology"],"matched":true}'}}]}
+        elif "Summarize" in user_content:
             return {"choices": [{"message": {"content": "This is a summary."}}]}
         elif "Rate the impact" in user_content:
             return {"choices": [{"message": {"content": "8"}}]}
@@ -140,6 +142,11 @@ def test_full_workflow(mock_fetch, mock_parse, setup_integration):
     # 2. Process
     class DummyConfig:
         LLM_CHAT_MODEL = "test-model"
+        FEED_KEYWORDS = ["science", "biology"]
+        PROMPT_ARTICLE_KEYWORD_LABELING = (
+            'Return valid JSON: {"labels":["topic"],"matched":true}\n'
+            "Keywords: {feed_keywords_text}\nTitle: {article_title}\nArticle: {article_content}"
+        )
         PROMPT_ARTICLE_SUMMARY = "Summarize: {article_content}"
         EMBEDDING_MODEL = "test-embedding"
 
@@ -151,6 +158,8 @@ def test_full_workflow(mock_fetch, mock_parse, setup_integration):
         article = session.exec(
             database.select(models.Article).where(models.Article.url == "http://example.com/article1")
         ).first()
+        assert article.keyword_labels == '["science", "biology"]'
+        assert article.keyword_match is True
         assert article.processed_content == "This is a summary."
         assert article.embedding is not None
 
@@ -200,6 +209,7 @@ def test_cli_main(mock_import, setup_integration):
     # Test --all
     with (
         patch.object(run_briefing, "scrape_articles") as mock_scrape,
+        patch.object(run_briefing, "label_articles") as mock_label,
         patch.object(run_briefing, "process_articles") as mock_process,
         patch.object(run_briefing, "rate_articles") as mock_rate,
         patch.object(run_briefing, "generate_brief") as mock_generate,
@@ -208,12 +218,14 @@ def test_cli_main(mock_import, setup_integration):
             run_briefing.main()
 
             mock_scrape.assert_called_once()
+            mock_label.assert_not_called()
             mock_process.assert_called_once()
             mock_rate.assert_called_once()
             mock_generate.assert_called_once()
 
         # Reset mocks
         mock_scrape.reset_mock()
+        mock_label.reset_mock()
         mock_process.reset_mock()
         mock_rate.reset_mock()
         mock_generate.reset_mock()
@@ -223,6 +235,7 @@ def test_cli_main(mock_import, setup_integration):
             run_briefing.main()
 
             mock_scrape.assert_called_once()
+            mock_label.assert_not_called()
             mock_process.assert_not_called()
             mock_rate.assert_not_called()
             mock_generate.assert_not_called()

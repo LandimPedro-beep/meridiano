@@ -5,6 +5,18 @@ RSS_FEEDS = [
   "https://www.bleepingcomputer.com/feed/",
   "https://www.wired.com/feed/category/security/latest/rss",
 ]
+FEED_KEYWORDS = [
+  "cybersecurity",
+  "vulnerability",
+  "ransomware",
+  "data breach",
+  "malware",
+  "zero-day",
+  "threat intelligence",
+  "incident response",
+  "supply chain attack",
+  "critical infrastructure",
+]
 
 # Used in process_articles (operates globally, so uses default)
 PROMPT_ARTICLE_SUMMARY = "Summarize the key points of this news article objectively in 3-5 sentences. Identify the main topics covered. Only include the result of the summarization, don't preface it with any text.\n\nArticle:\n{article_content}"

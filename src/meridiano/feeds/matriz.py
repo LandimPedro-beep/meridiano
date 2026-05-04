@@ -20,6 +20,18 @@ RSS_FEEDS = [
     "https://www.404media.co/rss",
     "https://theintercept.com/feed/",
 ]
+FEED_KEYWORDS = [
+    "tecnologia",
+    "inteligência artificial",
+    "hardware",
+    "chips",
+    "software",
+    "startups",
+    "inovação",
+    "ciência",
+    "política tecnológica",
+    "privacidade",
+]
 
 # Used in process_articles (operates globally, so uses default)
 PROMPT_ARTICLE_SUMMARY = (

@@ -21,10 +21,25 @@ app.secret_key = os.getenv("FLASK_SECRET_KEY", "a_default_secret_key_for_develop
 app.jinja_env.filters["datetimeformat"] = format_datetime
 
 
+def parse_keyword_labels(keyword_labels_raw):
+    if not keyword_labels_raw:
+        return []
+
+    if isinstance(keyword_labels_raw, list):
+        return keyword_labels_raw
+
+    try:
+        parsed = json.loads(keyword_labels_raw)
+        return parsed if isinstance(parsed, list) else []
+    except (json.JSONDecodeError, TypeError):
+        return []
+
+
 def process_artciles_content(articles_data):
     return [
         {
             **article,
+            "keyword_labels_list": parse_keyword_labels(article.get("keyword_labels")),
             "processed_content_html": Markup(
                 markdown.markdown(article["processed_content"] or "", extensions=["fenced_code"])
             ),
@@ -204,6 +219,7 @@ def view_article(article_id):
         abort(404)  # Return a 404 error if article not found
 
     article_data = dict(article_data_immutable)
+    article_data["keyword_labels_list"] = parse_keyword_labels(article_data.get("keyword_labels"))
 
     summary_markdown = article_data.get("processed_content", "") or ""
     # The summary includes a source link, so markdown rendering is useful

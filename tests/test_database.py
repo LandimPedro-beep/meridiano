@@ -26,6 +26,7 @@ from meridiano.database import (
     get_all_articles,
     get_article_by_id,
     get_article_count_for_collection,
+    get_articles_for_keyword_filter,
     get_articles_for_collection,
     get_brief_by_id,
     get_collection_by_id,
@@ -34,6 +35,7 @@ from meridiano.database import (
     remove_article_from_collection,
     save_brief,
     toggle_collection_archive_status,
+    update_article_keyword_filter,
 )
 
 
@@ -98,6 +100,16 @@ class TestGetArticle:
         result = get_article_by_id(99999)
         assert result is None
 
+    def test_get_article_includes_keyword_fields(self, sample_article_data):
+        article_id = add_article(**sample_article_data)
+        update_article_keyword_filter(article_id, ["science", "biology"], True)
+
+        retrieved = get_article_by_id(article_id)
+
+        assert retrieved["keyword_labels"] == '["science", "biology"]'
+        assert retrieved["keyword_match"] is True
+        assert retrieved["keyword_checked_at"] is not None
+
 
 class TestGetAllArticles:
     """Tests for listing articles."""
@@ -118,6 +130,20 @@ class TestGetAllArticles:
 
         articles = get_all_articles()
         assert len(articles) == 3
+
+
+class TestKeywordFilter:
+    """Tests for keyword filtering operations."""
+
+    def test_get_articles_for_keyword_filter(self, sample_article_data):
+        article_id = add_article(**sample_article_data)
+        pending = get_articles_for_keyword_filter(sample_article_data["feed_profile"])
+        assert len(pending) == 1
+        assert pending[0]["id"] == article_id
+
+        update_article_keyword_filter(article_id, ["science"], True)
+        pending_after = get_articles_for_keyword_filter(sample_article_data["feed_profile"])
+        assert pending_after == []
 
 
 class TestFeedProfiles:

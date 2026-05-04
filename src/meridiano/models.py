@@ -48,6 +48,9 @@ class Article(SQLModel, table=True):
     processed_content: Optional[str] = None
     embedding: Optional[str] = None  # JSON string
     processed_at: Optional[datetime] = Field(default=None, index=True)
+    keyword_labels: Optional[str] = None  # JSON string
+    keyword_match: Optional[bool] = Field(default=None, index=True)
+    keyword_checked_at: Optional[datetime] = Field(default=None, index=True)
     cluster_id: Optional[int] = None
     impact_score: Optional[int] = None
     image_url: Optional[str] = None
@@ -124,6 +127,26 @@ def create_db_and_tables():
             except Exception as e:
                 print(f"Migration failed: {e}")
                 session.rollback()
+
+    with Session(engine) as session:
+        article_column_migrations = [
+            ("keyword_labels", "TEXT"),
+            ("keyword_match", "BOOLEAN"),
+            ("keyword_checked_at", "DATETIME"),
+        ]
+        for column_name, column_type in article_column_migrations:
+            try:
+                session.exec(text(f"SELECT {column_name} FROM articles LIMIT 1"))
+            except Exception:
+                print(f"Migrating 'articles' table: Adding '{column_name}' column...")
+                session.rollback()
+                try:
+                    session.exec(text(f"ALTER TABLE articles ADD COLUMN {column_name} {column_type}"))
+                    session.commit()
+                    print("Migration successful.")
+                except Exception as e:
+                    print(f"Migration failed: {e}")
+                    session.rollback()
 
     # Old SQLite schema for reference (replaced by to_tsvector in PostgreSQL)
     """

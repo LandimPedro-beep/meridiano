@@ -90,6 +90,9 @@ def _article_to_dict(article: Article) -> Dict[str, Any]:
             "processed_content",
             "embedding",
             "processed_at",
+            "keyword_labels",
+            "keyword_match",
+            "keyword_checked_at",
             "cluster_id",
             "impact_score",
             "image_url",
@@ -282,13 +285,35 @@ def add_article(
 
 
 def get_unprocessed_articles(feed_profile: str, limit: int = 50) -> List[Dict[str, Any]]:
-    """Gets articles that haven't been processed yet."""
+    """Gets keyword-approved articles that haven't been processed yet."""
     with get_session() as session:
         statement = (
             select(Article)
             .where(
                 and_(
                     Article.processed_at.is_(None),
+                    Article.raw_content.is_not(None),
+                    Article.raw_content != "",
+                    Article.keyword_match.is_(True),
+                    Article.feed_profile == feed_profile,
+                )
+            )
+            .order_by(desc(Article.fetched_at))
+            .limit(limit)
+        )
+
+        articles = session.exec(statement).all()
+        return [_article_to_dict(article) for article in articles]
+
+
+def get_articles_for_keyword_filter(feed_profile: str, limit: int = 50) -> List[Dict[str, Any]]:
+    """Gets articles that still need keyword labeling/filtering."""
+    with get_session() as session:
+        statement = (
+            select(Article)
+            .where(
+                and_(
+                    Article.keyword_checked_at.is_(None),
                     Article.raw_content.is_not(None),
                     Article.raw_content != "",
                     Article.feed_profile == feed_profile,
@@ -300,6 +325,19 @@ def get_unprocessed_articles(feed_profile: str, limit: int = 50) -> List[Dict[st
 
         articles = session.exec(statement).all()
         return [_article_to_dict(article) for article in articles]
+
+
+def update_article_keyword_filter(article_id: int, labels: List[str], matched: bool) -> None:
+    """Stores keyword labels and the filter decision for an article."""
+    with get_session() as session:
+        statement = select(Article).where(Article.id == article_id)
+        article = session.exec(statement).first()
+        if article:
+            article.keyword_labels = json.dumps(labels, ensure_ascii=False)
+            article.keyword_match = matched
+            article.keyword_checked_at = datetime.now()
+            session.add(article)
+            session.commit()
 
 
 def update_article_processing(article_id: int, processed_content: str, embedding: Optional[List[float]]) -> None:

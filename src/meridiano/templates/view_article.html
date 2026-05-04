@@ -41,6 +41,26 @@
                 {% endif %}
             </dd>
 
+            <dt>Keyword Labels</dt>
+            <dd>
+                {% if article.keyword_labels_list %}
+                    {{ article.keyword_labels_list | join(', ') }}
+                {% else %}
+                    <em>No labels yet</em>
+                {% endif %}
+            </dd>
+
+            <dt>Keyword Filter</dt>
+            <dd>
+                {% if article.keyword_match is sameas true %}
+                    Approved for summary
+                {% elif article.keyword_match is sameas false %}
+                    Filtered out for this feed
+                {% else %}
+                    Not checked yet
+                {% endif %}
+            </dd>
+
             <dt>AI Summary (Processed Content)</dt>
             <dd class="content-block summary-content">
                 {% if article.processed_content_html %}

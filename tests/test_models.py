@@ -62,6 +62,9 @@ class TestArticleModel:
             assert article.title == sample_article_data["title"]
             assert article.feed_profile == sample_article_data["feed_profile"]
             assert article.image_url == sample_article_data["image_url"]
+            assert article.keyword_labels is None
+            assert article.keyword_match is None
+            assert article.keyword_checked_at is None
 
     def test_article_unique_url(self):
         """Test that article URLs must be unique."""

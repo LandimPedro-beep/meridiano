@@ -32,6 +32,48 @@ embedding_client = {
 }
 
 
+def parse_json_from_response(raw_text):
+    """Extracts a JSON object from a model response."""
+    if not raw_text:
+        return None
+
+    raw_text = raw_text.strip()
+    try:
+        return json.loads(raw_text)
+    except json.JSONDecodeError:
+        pass
+
+    match = re.search(r"\{.*\}", raw_text, re.DOTALL)
+    if not match:
+        return None
+
+    try:
+        return json.loads(match.group(0))
+    except json.JSONDecodeError:
+        return None
+
+
+def normalize_keyword_labels(labels):
+    """Normalizes labels returned by the keyword stage."""
+    if not isinstance(labels, list):
+        return []
+
+    normalized = []
+    seen = set()
+    for label in labels:
+        if not isinstance(label, str):
+            continue
+        cleaned = label.strip()
+        if not cleaned:
+            continue
+        cleaned_lower = cleaned.lower()
+        if cleaned_lower in seen:
+            continue
+        seen.add(cleaned_lower)
+        normalized.append(cleaned)
+    return normalized
+
+
 def call_deepseek_chat(prompt, model=config.LLM_CHAT_MODEL, system_prompt=None):
     """Calls the LLM API ( Ollama, etc)."""
     messages = []
@@ -182,16 +224,71 @@ def scrape_articles(feed_profile, rss_feeds):  # Added params
     print(f"--- Scraping Finished [{feed_profile}]. Added {new_articles_count} new articles. ---")
 
 
+def label_articles(feed_profile, effective_config, limit=1000):
+    """Labels articles with keywords and filters what can move to summarization."""
+    print(f"\n--- Starting Article Keyword Filtering [{feed_profile}] ---")
+    chat_model = getattr(effective_config, "LLM_CHAT_MODEL", "deepseek/deepseek-chat")
+    label_prompt_template = getattr(
+        effective_config,
+        "PROMPT_ARTICLE_KEYWORD_LABELING",
+        config.PROMPT_ARTICLE_KEYWORD_LABELING,
+    )
+    feed_keywords = getattr(effective_config, "FEED_KEYWORDS", []) or []
+    keywords_text = ", ".join(feed_keywords) if feed_keywords else "No fixed keywords for this feed."
+
+    pending_articles = database.get_articles_for_keyword_filter(feed_profile, limit)
+    labeled_count = 0
+    matched_count = 0
+
+    if not pending_articles:
+        print("No new articles to label.")
+        return
+
+    print(f"Found {len(pending_articles)} articles to label (Limit: {limit}).")
+    for article in pending_articles:
+        print(f"Labeling article ID: {article['id']} - {article['title']}")
+
+        label_prompt = label_prompt_template.format(
+            article_title=article.get("title") or "Untitled",
+            article_content=(article.get("raw_content") or "")[:4000],
+            feed_keywords_text=keywords_text,
+        )
+        response = call_deepseek_chat(label_prompt, model=chat_model)
+        parsed = parse_json_from_response(response)
+
+        if parsed:
+            labels = normalize_keyword_labels(parsed.get("labels", []))
+            matched = True if not feed_keywords else bool(parsed.get("matched"))
+        else:
+            print(f"  Warning: invalid keyword filter response for article {article['id']}.")
+            labels = []
+            matched = not feed_keywords
+
+        database.update_article_keyword_filter(article["id"], labels, matched)
+        labeled_count += 1
+        if matched:
+            matched_count += 1
+        print(f"  Labels: {labels if labels else '[]'} | Matched feed: {matched}")
+        time.sleep(1)
+
+    print(
+        f"--- Keyword Filtering Finished [{feed_profile}]. "
+        f"Labeled {labeled_count} articles, approved {matched_count}. ---"
+    )
+
+
 def process_articles(feed_profile, effective_config, limit=1000):
     """Processes unprocessed articles: summarizes and generates embeddings."""
     print("\n--- Starting Article Processing ---")
     chat_model = getattr(effective_config, "LLM_CHAT_MODEL", "deepseek/deepseek-chat")
     summary_prompt_template = getattr(effective_config, "PROMPT_ARTICLE_SUMMARY", config.PROMPT_ARTICLE_SUMMARY)
 
+    label_articles(feed_profile, effective_config, limit=limit)
+
     unprocessed = database.get_unprocessed_articles(feed_profile, limit)
     processed_count = 0
     if not unprocessed:
-        print("No new articles to process.")
+        print("No keyword-approved articles to process.")
         return
 
     print(f"Found {len(unprocessed)} articles to process (Limit: {limit}).")
@@ -442,6 +539,12 @@ def main():
         help=f"Specify the feed profile name (e.g., brazil, tech). Default: '{config.DEFAULT_FEED_PROFILE}'.",
     )
     parser.add_argument(
+        "--label-articles",
+        dest="label",
+        action="store_true",
+        help="Run only the keyword labeling/filter stage.",
+    )
+    parser.add_argument(
         "--rate-articles",
         dest="rate",
         action="store_true",
@@ -543,7 +646,7 @@ def main():
         print(f"Overriding chat model to: {args.model}")
 
     # Default to running all if no specific stage OR --all is provided
-    should_run_all = args.run_all or not (args.scrape or args.process or args.generate or args.rate)
+    should_run_all = args.run_all or not (args.scrape or args.label or args.process or args.generate or args.rate)
 
     print(f"\nMeridian Briefing Run [{feed_profile_name}] - {datetime.now()}")
     print("Initializing database...")
@@ -570,6 +673,9 @@ def main():
                 scrape_articles(feed_profile_name, current_rss_feeds)
             else:
                 print(f"Cannot run scrape stage: No RSS_FEEDS found for profile '{feed_profile_name}'.")
+        if args.label:
+            print(f"\n>>> Running ONLY Label Articles stage [{feed_profile_name}] <<<")
+            label_articles(feed_profile_name, effective_config, limit=args.limit)
         if args.process:
             print("\n>>> Running ONLY Process Articles stage <<<")
             process_articles(feed_profile_name, effective_config, limit=args.limit)

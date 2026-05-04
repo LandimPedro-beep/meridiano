@@ -7,6 +7,31 @@ from dotenv import load_dotenv
 # Load environment variables
 load_dotenv()
 
+# Used in keyword filtering before summarization
+PROMPT_ARTICLE_KEYWORD_LABELING = """
+Analyze this article quickly and return only valid JSON.
+
+Target keywords for this feed:
+{feed_keywords_text}
+
+Instructions:
+- Create a short list of topic labels for the article.
+- Set "matched" to true only if the article is relevant to the target keywords of this feed.
+- The labels can include topics outside the target keywords if they help organize the article.
+- Do not explain your answer.
+
+Return exactly this JSON shape:
+{{"labels":["label 1","label 2"],"matched":true}}
+
+Article title:
+{article_title}
+
+Article:
+{article_content}
+"""
+
+FEED_KEYWORDS = []
+
 # Used in process_articles (operates globally, so uses default)
 PROMPT_ARTICLE_SUMMARY = """
 Summarize the key points of this news article objectively in 2-4 sentences.
