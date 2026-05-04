@@ -1,13 +1,53 @@
 RSS_FEEDS = [
-    "http://feeds.nature.com/nature/rss/current",  # Nature
-]
-
+    "http://feeds.nature.com/nchembio/rss/current",  # Nature Chemical Biology
+]   "http://feeds.nature.com/nbt/rss/current",  # Nature Biotechnology
+    "http://feeds.nature.com/nmeth/rss/current", # Nature Methods
+    "https://www.cell.com/cell/archive?publicationCode=cell&amp;rss=yes", # Cell
+    "https://www.cell.com/molecular-cell/archive?publicationCode=molcel&amp;rss=yes", # Molecular Cell
+    "https://www.cell.com/cell-reports/archive?publicationCode=celrep&amp;rss=yes", # Cell Reports
+    
 pt_br = " Responda em português brasileiro."
 
 # Used in process_articles (operates globally, so uses default)
-PROMPT_ARTICLE_SUMMARY = (
-    "Resuma os pontos principais deste artigo objetivamente em 2 a 4 frases. "
-    "Identifique os principais tópicos abordados.\n\nArtigo:\n{article_content}." + pt_br
+PROMPT_SCIENTIFIC_SUMMARY = """Você é um assistente de sumarização científica extremamente rigoroso.
+
+Sua tarefa é resumir o texto fornecido com TOTAL fidelidade ao conteúdo original.
+
+REGRAS OBRIGATÓRIAS:
+- NÃO adicionar nenhuma informação que não esteja explicitamente no texto
+- NÃO inferir, supor ou completar lacunas
+- NÃO interpretar além do que está escrito
+- NÃO criar conclusões próprias
+- Se alguma informação não estiver clara no texto, simplesmente não mencione
+- Use apenas informações que possam ser diretamente apontadas no conteúdo
+
+OBJETIVO DO RESUMO:
+Gerar um resumo claro, direto e estruturado que preserve completamente o significado original.
+
+ESTRUTURA OBRIGATÓRIA:
+Responda EXATAMENTE no seguinte formato:
+
+1. Objetivo:
+Descreva claramente qual é o objetivo do estudo.
+
+2. Método:
+Explique como o estudo foi conduzido (técnicas, abordagem, experimento, análise, etc.), apenas com base no texto.
+
+3. Resultados:
+Apresente os principais achados do estudo.
+
+4. Conclusão:
+Descreva a conclusão dos autores conforme explicitada no texto.
+
+REGRAS DE LINGUAGEM:
+- Escreva em português brasileiro
+- Use linguagem clara e técnica, mas simplificada
+- Evite frases longas e ambíguas
+- Não use opiniões ou adjetivos desnecessários
+
+IMPORTANTE:
+Se qualquer uma das seções (objetivo, método, resultados, conclusão) não estiver presente ou não estiver clara no texto, escreva:
+"Não especificado no texto"
 )
 
 # Used in rate_articles (operates globally, so uses default)
