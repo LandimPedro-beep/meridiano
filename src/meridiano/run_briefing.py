@@ -33,7 +33,7 @@ embedding_client = {
 
 
 def call_deepseek_chat(prompt, model=config.LLM_CHAT_MODEL, system_prompt=None):
-    """Calls the LLM API (Deepseek, Ollama, etc)."""
+    """Calls the LLM API ( Ollama, etc)."""
     messages = []
     if system_prompt:
         messages.append({"role": "system", "content": system_prompt})

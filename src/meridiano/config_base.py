@@ -63,10 +63,10 @@ Analyzed News Clusters (Most significant first):
 BRIEFING_ARTICLE_LOOKBACK_HOURS = 24
 
 # --- Model Settings ---
-# Model for summarization and analysis (check Deepseek docs for latest models)
-LLM_CHAT_MODEL = os.getenv("LLM_CHAT_MODEL", "deepseek/deepseek-chat")
+# Model for summarization and analysis (check LLM docs for latest models)
+LLM_CHAT_MODEL = os.getenv("LLM_CHAT_MODEL", "ollama/mistral")
 # Model for embeddings
-EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "together_ai/intfloat/multilingual-e5-large-instruct")
+EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "ollama/nomic-embed-text")
 
 # Approximate number of clusters to aim for. Fine-tune based on results.
 # Alternatively, use algorithms like DBSCAN that don't require specifying k.
