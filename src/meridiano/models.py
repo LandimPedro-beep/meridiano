@@ -43,6 +43,7 @@ class Article(SQLModel, table=True):
     title: Optional[str] = None
     published_date: Optional[datetime] = None
     feed_source: Optional[str] = None
+    rss_feed_url: Optional[str] = Field(default=None, index=True)
     fetched_at: datetime = Field(default_factory=datetime.now)
     raw_content: Optional[str] = None
     processed_content: Optional[str] = None
@@ -55,6 +56,23 @@ class Article(SQLModel, table=True):
     impact_score: Optional[int] = None
     image_url: Optional[str] = None
     feed_profile: str = Field(default="default", index=True)
+
+
+class FeedScrapeMetric(SQLModel, table=True):
+    """Per-feed scrape metrics captured for a single scrape run."""
+
+    __tablename__ = "feed_scrape_metrics"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    scrape_run_id: str = Field(index=True)
+    recorded_at: datetime = Field(default_factory=datetime.now, index=True)
+    feed_profile: str = Field(index=True)
+    rss_feed_url: str = Field(index=True)
+    feed_source: Optional[str] = None
+    detected_count: int = Field(default=0)
+    duplicate_count: int = Field(default=0)
+    scrape_success_count: int = Field(default=0)
+    scrape_failed_count: int = Field(default=0)
 
 
 class Brief(SQLModel, table=True):
@@ -130,6 +148,7 @@ def create_db_and_tables():
 
     with Session(engine) as session:
         article_column_migrations = [
+            ("rss_feed_url", "TEXT"),
             ("keyword_labels", "TEXT"),
             ("keyword_match", "BOOLEAN"),
             ("keyword_checked_at", "DATETIME"),

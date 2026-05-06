@@ -306,6 +306,94 @@ def test_edge_cases(setup_integration):
     assert "Not enough recent articles" in output
 
 
+@patch("meridiano.run_briefing.feedparser.parse")
+@patch("meridiano.run_briefing.fetch_article_content_and_og_image")
+def test_feed_feedback_summary(mock_fetch, mock_parse, setup_integration):
+    mock_completion = setup_integration["mock_completion"]
+    mock_embedding = setup_integration["mock_embedding"]
+
+    feed_profile = "feedback_profile"
+    rss_feed_url = "http://example.com/rss"
+
+    mock_feed = feedparser.FeedParserDict()
+    mock_feed.bozo = 0
+    mock_feed.feed = feedparser.FeedParserDict({"title": "Feedback Feed"})
+    mock_feed.entries = [
+        feedparser.FeedParserDict(
+            {
+                "title": "Accepted Article",
+                "link": "http://example.com/accepted",
+                "published_parsed": time.struct_time((2023, 1, 1, 12, 0, 0, 6, 1, 0)),
+            }
+        ),
+        feedparser.FeedParserDict(
+            {
+                "title": "Rejected Article",
+                "link": "http://example.com/rejected",
+                "published_parsed": time.struct_time((2023, 1, 1, 12, 5, 0, 6, 1, 0)),
+            }
+        ),
+        feedparser.FeedParserDict(
+            {
+                "title": "Failed Scrape Article",
+                "link": "http://example.com/failed",
+                "published_parsed": time.struct_time((2023, 1, 1, 12, 10, 0, 6, 1, 0)),
+            }
+        ),
+    ]
+    mock_parse.return_value = mock_feed
+
+    def fetch_side_effect(url):
+        if url.endswith("/failed"):
+            return {"content": None, "og_image": None}
+        return {"content": f"content for {url}", "og_image": "http://example.com/image.jpg"}
+
+    mock_fetch.side_effect = fetch_side_effect
+
+    def chat_side_effect(*args, **kwargs):
+        user_content = kwargs.get("messages", [])[-1]["content"]
+        if "Return valid JSON" in user_content:
+            if "Accepted Article" in user_content:
+                content = '{"labels":["bio"],"matched":true}'
+            else:
+                content = '{"labels":["off-topic"],"matched":false}'
+            return {"choices": [{"message": {"content": content}}]}
+        if "Summarize:" in user_content:
+            return {"choices": [{"message": {"content": "Processed summary"}}]}
+        return {"choices": [{"message": {"content": "7"}}]}
+
+    mock_completion.side_effect = chat_side_effect
+    mock_embedding.return_value = {"data": [{"embedding": [0.1, 0.2, 0.3]}]}
+
+    class DummyConfig:
+        LLM_CHAT_MODEL = "test-model"
+        FEED_KEYWORDS = ["bio"]
+        PROMPT_ARTICLE_KEYWORD_LABELING = (
+            'Return valid JSON: {"labels":["topic"],"matched":true}\n'
+            "Keywords: {feed_keywords_text}\nTitle: {article_title}\nArticle: {article_content}"
+        )
+        PROMPT_ARTICLE_SUMMARY = "Summarize: {article_content}"
+        EMBEDDING_MODEL = "test-embedding"
+
+    run_briefing.scrape_articles(feed_profile, [rss_feed_url])
+    run_briefing.process_articles(feed_profile, DummyConfig())
+
+    summary = database.get_latest_feed_feedback_summary(feed_profile)
+
+    assert len(summary) == 1
+    row = summary[0]
+    assert row["rss_feed_url"] == rss_feed_url
+    assert row["feed_source"] == "Feedback Feed"
+    assert row["detected_count"] == 3
+    assert row["scrape_success_count"] == 2
+    assert row["scrape_failed_count"] == 1
+    assert row["duplicate_count"] == 0
+    assert row["stored_count"] == 2
+    assert row["processed_count"] == 1
+    assert row["keyword_accepted_count"] == 1
+    assert row["keyword_rejected_count"] == 1
+
+
 def test_empty_feed_profile(setup_integration):
     # Mock import to return config with NO feeds
     mock_feed_config = MagicMock()

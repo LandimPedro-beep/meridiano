@@ -8,12 +8,12 @@ import logging
 from datetime import date, datetime, timedelta
 from typing import Any, Dict, List, Optional
 
-from sqlalchemy import text
+from sqlalchemy import case, text
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import and_, asc, desc, func, or_, select
 
 from . import config_base as config
-from .models import Article, Brief, Collection, CollectionArticle, get_session
+from .models import Article, Brief, Collection, CollectionArticle, FeedScrapeMetric, get_session
 from .models import init_db as model_init_db
 
 logger = logging.getLogger(__name__)
@@ -85,6 +85,7 @@ def _article_to_dict(article: Article) -> Dict[str, Any]:
             "title",
             "published_date",
             "feed_source",
+            "rss_feed_url",
             "fetched_at",
             "raw_content",
             "processed_content",
@@ -244,6 +245,7 @@ def add_article(
     raw_content: str,
     feed_profile: str,
     image_url: Optional[str] = None,
+    rss_feed_url: Optional[str] = None,
 ) -> Optional[int]:
     """Adds a new article with optional image URL."""
     with get_session() as session:
@@ -269,6 +271,7 @@ def add_article(
                 title=title,
                 published_date=published_date,
                 feed_source=feed_source,
+                rss_feed_url=rss_feed_url,
                 raw_content=raw_content,
                 image_url=image_url,
                 feed_profile=feed_profile,
@@ -282,6 +285,127 @@ def add_article(
         except IntegrityError:
             session.rollback()
             return None
+
+
+def record_feed_scrape_metric(
+    scrape_run_id: str,
+    feed_profile: str,
+    rss_feed_url: str,
+    feed_source: Optional[str],
+    detected_count: int,
+    duplicate_count: int,
+    scrape_success_count: int,
+    scrape_failed_count: int,
+) -> int:
+    """Persists scrape-stage metrics for one RSS feed in one scrape run."""
+    with get_session() as session:
+        metric = FeedScrapeMetric(
+            scrape_run_id=scrape_run_id,
+            feed_profile=feed_profile,
+            rss_feed_url=rss_feed_url,
+            feed_source=feed_source,
+            detected_count=detected_count,
+            duplicate_count=duplicate_count,
+            scrape_success_count=scrape_success_count,
+            scrape_failed_count=scrape_failed_count,
+            recorded_at=datetime.now(),
+        )
+        session.add(metric)
+        session.commit()
+        session.refresh(metric)
+        return metric.id
+
+
+def get_latest_feed_feedback_summary(feed_profile: str) -> List[Dict[str, Any]]:
+    """Returns per-feed confidence metrics from the latest scrape run plus current article state."""
+    with get_session() as session:
+        latest_run_id = session.exec(
+            select(FeedScrapeMetric.scrape_run_id)
+            .where(FeedScrapeMetric.feed_profile == feed_profile)
+            .order_by(desc(FeedScrapeMetric.recorded_at))
+            .limit(1)
+        ).first()
+
+        latest_metrics = {}
+        if latest_run_id:
+            metric_rows = session.exec(
+                select(FeedScrapeMetric).where(
+                    and_(
+                        FeedScrapeMetric.feed_profile == feed_profile,
+                        FeedScrapeMetric.scrape_run_id == latest_run_id,
+                    )
+                )
+            ).all()
+            latest_metrics = {
+                row.rss_feed_url: {
+                    "scrape_run_id": row.scrape_run_id,
+                    "last_scrape_at": row.recorded_at,
+                    "detected_count": row.detected_count,
+                    "duplicate_count": row.duplicate_count,
+                    "scrape_success_count": row.scrape_success_count,
+                    "scrape_failed_count": row.scrape_failed_count,
+                    "feed_source": row.feed_source,
+                }
+                for row in metric_rows
+            }
+
+        article_rows = session.exec(
+            select(
+                Article.rss_feed_url,
+                func.max(Article.feed_source),
+                func.count(Article.id),
+                func.sum(case((Article.processed_at.is_not(None), 1), else_=0)),
+                func.sum(case((Article.keyword_match.is_(True), 1), else_=0)),
+                func.sum(case((Article.keyword_match.is_(False), 1), else_=0)),
+            )
+            .where(Article.feed_profile == feed_profile)
+            .group_by(Article.rss_feed_url)
+        ).all()
+
+        summary_by_feed = {}
+        for rss_feed_url, feed_source, stored_count, processed_count, approved_count, rejected_count in article_rows:
+            if not rss_feed_url:
+                continue
+            summary_by_feed[rss_feed_url] = {
+                "feed_profile": feed_profile,
+                "rss_feed_url": rss_feed_url,
+                "feed_source": feed_source,
+                "scrape_run_id": None,
+                "last_scrape_at": None,
+                "detected_count": 0,
+                "duplicate_count": 0,
+                "scrape_success_count": 0,
+                "scrape_failed_count": 0,
+                "stored_count": stored_count or 0,
+                "processed_count": processed_count or 0,
+                "keyword_accepted_count": approved_count or 0,
+                "keyword_rejected_count": rejected_count or 0,
+            }
+
+        for rss_feed_url, metric in latest_metrics.items():
+            row = summary_by_feed.setdefault(
+                rss_feed_url,
+                {
+                    "feed_profile": feed_profile,
+                    "rss_feed_url": rss_feed_url,
+                    "feed_source": metric.get("feed_source"),
+                    "scrape_run_id": None,
+                    "last_scrape_at": None,
+                    "detected_count": 0,
+                    "duplicate_count": 0,
+                    "scrape_success_count": 0,
+                    "scrape_failed_count": 0,
+                    "stored_count": 0,
+                    "processed_count": 0,
+                    "keyword_accepted_count": 0,
+                    "keyword_rejected_count": 0,
+                },
+            )
+            row.update(metric)
+            if not row.get("feed_source"):
+                row["feed_source"] = metric.get("feed_source")
+
+        return sorted(summary_by_feed.values(), key=lambda item: item["rss_feed_url"])
 
 
 def get_unprocessed_articles(feed_profile: str, limit: int = 50) -> List[Dict[str, Any]]:

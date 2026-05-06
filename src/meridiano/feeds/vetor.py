@@ -6,7 +6,6 @@ RSS_FEEDS = [
     "https://www.cell.com/molecular-cell/archive?publicationCode=molcel&amp;rss=yes", # Molecular Cell
     "https://www.cell.com/cell-reports/archive?publicationCode=celrep&amp;rss=yes", # Cell Reports
     "https://pubs.acs.org/action/showFeed?type=etoc&feed=rss&jc=achre4", # ACS Chemical Research
-    "https://pubs.acs.org/action/showFeed?type=axatoc&feed=rss&jc=aabmcb", # ACS Applied Bio Materials
     "hhttps://pubs.acs.org/action/showFeed?type=axatoc&feed=rss&jc=abmcb8", # ACS Bio & Med Chem Au
     "https://pubs.acs.org/action/showFeed?type=axatoc&feed=rss&jc=acbcct", # ACS Chemical Biology
     "https://pubs.acs.org/action/showFeed?type=axatoc&feed=rss&jc=bichaw" # ACS Biochemistry
@@ -28,7 +27,7 @@ RSS_FEEDS = [
     "http://rss.sciencedirect.com/publication/science/01620134", # Science Direct Journal of Inorganic Biochemistry
     "http://rss.sciencedirect.com/publication/science/0022328X", # Science Direct Journal of Oranometallic Chemistry
     "http://rss.sciencedirect.com/publication/science/13595113", # Science Direct Process Biochemistry
-    
+
 ]   
 pt_br = " Responda em português brasileiro."
 FEED_KEYWORDS = [

@@ -7,6 +7,7 @@ import os
 import re
 import time
 from datetime import datetime
+from uuid import uuid4
 
 import feedparser
 import litellm
@@ -134,6 +135,34 @@ def get_deepseek_embedding(text, model=config.EMBEDDING_MODEL):
         return None
 
 
+def print_feed_feedback_report(feed_profile):
+    """Prints a per-RSS feedback report for the latest scrape run and current pipeline state."""
+    rows = database.get_latest_feed_feedback_summary(feed_profile)
+    if not rows:
+        print(f"No feedback metrics available yet for profile '{feed_profile}'.")
+        return
+
+    print(f"\n--- Feed Feedback Report [{feed_profile}] ---")
+    for row in rows:
+        source_label = row.get("feed_source") or "Unknown Source"
+        print(f"* {source_label}")
+        print(f"  RSS_FEED: {row['rss_feed_url']}")
+        print(
+            "  Latest scrape:"
+            f" detected={row['detected_count']},"
+            f" duplicates={row['duplicate_count']},"
+            f" scraped_ok={row['scrape_success_count']},"
+            f" scrape_failed={row['scrape_failed_count']}"
+        )
+        print(
+            "  Pipeline totals:"
+            f" stored={row['stored_count']},"
+            f" processed={row['processed_count']},"
+            f" keyword_accepted={row['keyword_accepted_count']},"
+            f" keyword_rejected={row['keyword_rejected_count']}"
+        )
+
+
 # --- Core Functions ---
 
 
@@ -141,6 +170,7 @@ def scrape_articles(feed_profile, rss_feeds):  # Added params
     """Scrapes articles for a specific feed profile."""
     print(f"\n--- Starting Article Scraping [{feed_profile}] ---")
     new_articles_count = 0
+    scrape_run_id = f"{feed_profile}-{datetime.now().strftime('%Y%m%d%H%M%S')}-{uuid4().hex[:8]}"
     if not rss_feeds:
         print(f"Warning: No RSS_FEEDS defined for profile '{feed_profile}'. Skipping scrape.")
         return
@@ -148,24 +178,32 @@ def scrape_articles(feed_profile, rss_feeds):  # Added params
     for feed_url in rss_feeds:
         print(f"Fetching feed: {feed_url}")
         feed = feedparser.parse(feed_url)
+        detected_count = 0
+        duplicate_count = 0
+        scrape_success_count = 0
+        scrape_failed_count = 0
+        feed_source = None
 
         if feed.bozo:
             print(f"Warning: Potential issue parsing feed {feed_url}: {feed.bozo_exception}")
 
+        feed_source = feed.feed.get("title", feed_url)
         for entry in feed.entries:
+            detected_count += 1
             url = entry.get("link")
             title = entry.get("title", "No Title")
             published_parsed = entry.get("published_parsed")
             published_date = datetime(*published_parsed[:6]) if published_parsed else datetime.now()
-            feed_source = feed.feed.get("title", feed_url)
 
             if not url:
+                scrape_failed_count += 1
                 continue
 
             # --- Check if article exists ---
             with get_session() as session:
                 exists = session.exec(select(Article).where(Article.url == url)).first()
             if exists:
+                duplicate_count += 1
                 continue
             # --- End Check ---
 
@@ -205,6 +243,7 @@ def scrape_articles(feed_profile, rss_feeds):  # Added params
 
             if not raw_content:
                 print(f"  Skipping article, failed to extract main content: {title}")
+                scrape_failed_count += 1
                 continue
 
             # --- 3. Determine Final Image URL and Save ---
@@ -215,13 +254,35 @@ def scrape_articles(feed_profile, rss_feeds):  # Added params
                 print("  No image found in RSS or OG tags.")
 
             article_id = database.add_article(
-                url, title, published_date, feed_source, raw_content, feed_profile, final_image_url
+                url,
+                title,
+                published_date,
+                feed_source,
+                raw_content,
+                feed_profile,
+                final_image_url,
+                rss_feed_url=feed_url,
             )
             if article_id:
                 new_articles_count += 1
+                scrape_success_count += 1
+            else:
+                scrape_failed_count += 1
             time.sleep(0.5)  # Be polite
 
+        database.record_feed_scrape_metric(
+            scrape_run_id=scrape_run_id,
+            feed_profile=feed_profile,
+            rss_feed_url=feed_url,
+            feed_source=feed_source,
+            detected_count=detected_count,
+            duplicate_count=duplicate_count,
+            scrape_success_count=scrape_success_count,
+            scrape_failed_count=scrape_failed_count,
+        )
+
     print(f"--- Scraping Finished [{feed_profile}]. Added {new_articles_count} new articles. ---")
+    print_feed_feedback_report(feed_profile)
 
 
 def label_articles(feed_profile, effective_config, limit=1000):
@@ -275,6 +336,7 @@ def label_articles(feed_profile, effective_config, limit=1000):
         f"--- Keyword Filtering Finished [{feed_profile}]. "
         f"Labeled {labeled_count} articles, approved {matched_count}. ---"
     )
+    print_feed_feedback_report(feed_profile)
 
 
 def process_articles(feed_profile, effective_config, limit=1000):
@@ -323,6 +385,7 @@ def process_articles(feed_profile, effective_config, limit=1000):
         time.sleep(1)  # Avoid hitting API rate limits
 
     print(f"--- Processing Finished. Processed {processed_count} articles. ---")
+    print_feed_feedback_report(feed_profile)
 
 
 def rate_articles(feed_profile, effective_config, limit=1000):
@@ -566,6 +629,12 @@ def main():
         help="Run only the brief generation (cluster, analyze, synthesize) stage.",
     )
     parser.add_argument(
+        "--show-feedback",
+        dest="feedback",
+        action="store_true",
+        help="Show the latest per-feed confidence report for the selected profile.",
+    )
+    parser.add_argument(
         '--all',
         dest='run_all',
         action='store_true',
@@ -646,7 +715,9 @@ def main():
         print(f"Overriding chat model to: {args.model}")
 
     # Default to running all if no specific stage OR --all is provided
-    should_run_all = args.run_all or not (args.scrape or args.label or args.process or args.generate or args.rate)
+    should_run_all = args.run_all or not (
+        args.scrape or args.label or args.process or args.generate or args.rate or args.feedback
+    )
 
     print(f"\nMeridian Briefing Run [{feed_profile_name}] - {datetime.now()}")
     print("Initializing database...")
@@ -688,6 +759,9 @@ def main():
                 generate_brief(feed_profile_name, effective_config)
             else:
                 print(f"Cannot run generate stage: No RSS_FEEDS found for profile '{feed_profile_name}'.")
+        if args.feedback:
+            print(f"\n>>> Running ONLY Feedback Report stage [{feed_profile_name}] <<<")
+            print_feed_feedback_report(feed_profile_name)
 
     print(f"\nRun Finished [{feed_profile_name}] - {datetime.now()}")
 
