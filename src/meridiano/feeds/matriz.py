@@ -1,24 +1,11 @@
 RSS_FEEDS = [
-    "https://techcrunch.com/feed/",
-    "https://cetic.br/pt/noticias/feed.rss",
-    "https://capitaldigital.com.br/feed/",
-    "https://www.theverge.com/rss/index.xml",
-    "https://arstechnica.com/feed/",
-    "https://www.tomshardware.com/feeds/all",
-    "https://www.scmp.com/rss/36/feed", # tech
-    "https://www.scmp.com/rss/320663/feed", # china tech
-    "https://www.scmp.com/rss/318220/feed", # startups
-    "https://www.scmp.com/rss/318221/feed", # apps and gaming
-    "https://www.scmp.com/rss/318224/feed", # science and research
-    "https://www.scmp.com/rss/318222/feed", # innovation
-    "https://www.wired.com/feed/category/backchannel/latest/rss",
-    "https://www.wired.com/feed/category/business/latest/rss",
-    "https://www.wired.com/feed/tag/ai/latest/rss",
-    "https://www.wired.com/feed/category/ideas/latest/rss",
-    "https://www.wired.com/feed/category/science/latest/rss",
-    "https://economictimes.indiatimes.com/tech/rssfeeds/13357270.cms",
-    "https://www.404media.co/rss",
-    "https://theintercept.com/feed/",
+    "hhttps://pubs.acs.org/action/showFeed?type=axatoc&feed=rss&jc=chreay", # ACS Chemical Reviews
+    "http://feeds.nature.com/nrc/rss/current", # Nature Reviews Cancer
+    "http://feeds.nature.com/nrdp/rss/current", # Nature Reviews Dieses Primers
+    "http://feeds.nature.com/nrg/rss/current", # Nature Reviews Genetics
+    "http://feeds.nature.com/nrmicro/rss/current", # Nature Reviews Microbiology
+    "http://feeds.nature.com/nrm/rss/current", # Nature Reviews Molecular Cell Biology
+    "http://iopscience.iop.org/0036-021X/?rss=1", #Russian Chemical Reviews 
 ]
 FEED_KEYWORDS = [
     "tecnologia",

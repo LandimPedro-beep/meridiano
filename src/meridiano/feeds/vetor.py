@@ -5,6 +5,30 @@ RSS_FEEDS = [
     "https://www.cell.com/cell/archive?publicationCode=cell&amp;rss=yes", # Cell
     "https://www.cell.com/molecular-cell/archive?publicationCode=molcel&amp;rss=yes", # Molecular Cell
     "https://www.cell.com/cell-reports/archive?publicationCode=celrep&amp;rss=yes", # Cell Reports
+    "https://pubs.acs.org/action/showFeed?type=etoc&feed=rss&jc=achre4", # ACS Chemical Research
+    "https://pubs.acs.org/action/showFeed?type=axatoc&feed=rss&jc=aabmcb", # ACS Applied Bio Materials
+    "hhttps://pubs.acs.org/action/showFeed?type=axatoc&feed=rss&jc=abmcb8", # ACS Bio & Med Chem Au
+    "https://pubs.acs.org/action/showFeed?type=axatoc&feed=rss&jc=acbcct", # ACS Chemical Biology
+    "https://pubs.acs.org/action/showFeed?type=axatoc&feed=rss&jc=bichaw" # ACS Biochemistry
+    "https://pubs.acs.org/action/showFeed?type=axatoc&feed=rss&jc=bomaf6", # ACS Biomacromolecules
+    "http://feeds.nature.com/ncb/rss/current", # Nature Cell Biology
+    "http://feeds.nature.com/nchem/rss/current", # Nature Chemistry
+    "http://feeds.nature.com/ng/rss/current", # Nature Genetics
+    "http://feeds.nature.com/nmicrobiol/rss/current", # Nature Microbiology
+    "http://feeds.nature.com/nsmb/rss/current", # Nature Structural & Molecular Biology
+    "http://bmcbiochem.biomedcentral.com/articles/most-recent/rss.xml", # BMC Biochemistry
+    "http://bmcbiol.biomedcentral.com/articles/most-recent/rss.xml", # BMC Biology
+    "http://bmcmicrobiol.biomedcentral.com/articles/most-recent/rss.xml", # BMC Microbiology
+    "http://bmcmolbiol.biomedcentral.com/articles/most-recent/rss.xml", # BMC Molecular Biology
+    "https://academic.oup.com/rss/site_5303/3169.xml", #The Journal of Biochemistry
+    "http://rss.sciencedirect.com/publication/science/00063061", # Science Direct Bioinorcanical Chemistry
+    "http://rss.sciencedirect.com/publication/science/09680896", # Science Direct Bioorganic & Medical Chemistry
+    "http://rss.sciencedirect.com/publication/science/0960894X", # Science Direct Bioorganic & Medical Chemistry Letters
+    "http://rss.sciencedirect.com/publication/science/0020711X", # Science Direct Journal of Biochemistry
+    "http://rss.sciencedirect.com/publication/science/01620134", # Science Direct Journal of Inorganic Biochemistry
+    "http://rss.sciencedirect.com/publication/science/0022328X", # Science Direct Journal of Oranometallic Chemistry
+    "http://rss.sciencedirect.com/publication/science/13595113", # Science Direct Process Biochemistry
+    
 ]   
 pt_br = " Responda em português brasileiro."
 FEED_KEYWORDS = [
@@ -39,11 +63,13 @@ PROMPT_ARTICLE_KEYWORD_LABELING = (
 PROMPT_ARTICLE_SUMMARY = ("Resuma os pontos-chave do abstract deste artigo objetivamente em 3-5 frases. Se atenha apenas ao conteúdo do artigo, sem adicionar informações externas. O objetivo é criar um resumo conciso e informativo que capture os aspectos mais importantes do artigo, sem incluir opiniões ou análises. Adicione quebras de linha duplas entre os parágrafos para melhorar a legibilidade. Identifique os principais tópicos abordados no artigo. Inclua apenas o resultado da sumarização, sem prefaciar com nenhum texto adicional. Escreva em português brasileiro.\n\nArtigo:\n{article_content}" + pt_br)
 
 # Used in rate_articles (operates globally, so uses default)
-PROMPT_IMPACT_RATING = """Analise o resumo da notícia a seguir e estime seu impacto no contexto brasileiro.
-Considere fatores como noticiabilidade, relevância para o público brasileiro, abrangência geográfica
-(local, regional ou nacional), número de pessoas afetadas, gravidade e potenciais consequências a longo prazo
-para o Brasil. Seja extremamente crítico e conservador ao atribuir pontuações — pontuações mais altas devem
-refletir eventos verdadeiramente excepcionais ou raros dentro da realidade brasileira.
+PROMPT_IMPACT_RATING = """Analise o resumo do artigo a seguir e estime seu impacto no 
+contexto cientifico daquela área.
+Considere fatores como impacto da revista publicada, relevância de resultados, objetivo do 
+estudo, potencial de avanço científico, autores renomados e interesse da comunidade. Classifique o impacto em 
+uma escala de 1 a 10, onde 1 representa um impacto mínimo e 10 representa um impacto 
+extraordinário. Seja crítico e conservador ao atribuir pontuações — pontuações mais altas 
+devem refletir estudos verdadeiramente excepcionais ou inovadores dentro do campo científico.
 
 Avalie o impacto em uma escala de 1 a 10, usando estas diretrizes:
 
