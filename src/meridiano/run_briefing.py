@@ -6,7 +6,7 @@ import json
 import os
 import re
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 from uuid import uuid4
 
 import feedparser
@@ -19,7 +19,7 @@ from sqlmodel import select
 from meridiano import config_base as config  # Load base config first
 from meridiano import database
 from meridiano.models import Article, get_session
-from meridiano.utils import fetch_article_content_and_og_image
+from meridiano.utils import clean_html_to_text, fetch_article_content_and_og_image
 
 # --- Setup ---
 load_dotenv()
@@ -163,11 +163,108 @@ def print_feed_feedback_report(feed_profile):
         )
 
 
+def extract_entry_abstract(entry):
+    """Extracts a lightweight abstract/summary from RSS metadata without full-page scraping."""
+    summary = entry.get("summary") or entry.get("description")
+    cleaned_summary = clean_html_to_text(summary)
+    if cleaned_summary:
+        return cleaned_summary
+
+    content_blocks = entry.get("content")
+    if isinstance(content_blocks, list):
+        for block in content_blocks:
+            if not isinstance(block, dict):
+                continue
+            cleaned_value = clean_html_to_text(block.get("value"))
+            if cleaned_value:
+                return cleaned_value
+
+    return None
+
+
+def determine_temporal_eligibility(published_date, effective_config):
+    """Computes block-specific temporal eligibility from feed configuration."""
+    now = datetime.now()
+    block_id = getattr(effective_config, "BLOCK_ID", None)
+    result = {
+        "publication_date_verified": published_date,
+        "publication_year": published_date.year if published_date else None,
+        "novelty_window_match": None,
+        "matrix_window_match": None,
+        "eligibility_status": "unknown",
+        "eligibility_reason": "No temporal rule configured.",
+        "editorial_block": block_id,
+    }
+
+    if not published_date:
+        result["eligibility_status"] = "rejected"
+        result["eligibility_reason"] = "Missing publication date."
+        return result
+
+    if hasattr(effective_config, "PUBLICATION_WINDOW_DAYS"):
+        window_days = int(getattr(effective_config, "PUBLICATION_WINDOW_DAYS"))
+        cutoff = now - timedelta(days=window_days)
+        matched = published_date >= cutoff
+        result["novelty_window_match"] = matched
+        result["eligibility_status"] = "eligible" if matched else "rejected"
+        result["eligibility_reason"] = (
+            f"Published within the last {window_days} days."
+            if matched
+            else f"Published outside the last {window_days} days."
+        )
+        return result
+
+    if hasattr(effective_config, "PUBLICATION_MIN_AGE_YEARS") and hasattr(effective_config, "PUBLICATION_MAX_AGE_YEARS"):
+        min_age = int(getattr(effective_config, "PUBLICATION_MIN_AGE_YEARS"))
+        max_age = int(getattr(effective_config, "PUBLICATION_MAX_AGE_YEARS"))
+        age_years = (now.date() - published_date.date()).days / 365.25
+        matched = min_age <= age_years <= max_age
+        result["matrix_window_match"] = matched
+        result["eligibility_status"] = "eligible" if matched else "rejected"
+        result["eligibility_reason"] = (
+            f"Publication age is between {min_age} and {max_age} years."
+            if matched
+            else f"Publication age is outside the {min_age}-{max_age} year window."
+        )
+        return result
+
+    return result
+
+
+def hydrate_eligible_articles_content(feed_profile, limit=1000):
+    """Runs the expensive full-page scrape only for already eligible articles."""
+    pending_articles = database.get_articles_pending_content_scrape(feed_profile, limit)
+    hydrated_count = 0
+
+    if not pending_articles:
+        return 0
+
+    print(f"Hydrating full content for {len(pending_articles)} eligible articles [{feed_profile}].")
+    for article in pending_articles:
+        print(f"Fetching full article content for article ID: {article['id']} - {article['url'][:60]}")
+        fetch_result = fetch_article_content_and_og_image(article["url"])
+        raw_content = fetch_result["content"]
+        og_image_url = fetch_result["og_image"]
+        fallback_abstract = article.get("abstract")
+        database.update_article_content_scrape(
+            article["id"],
+            raw_content=raw_content,
+            image_url=og_image_url,
+            abstract=fallback_abstract,
+            scrape_status="scraped" if raw_content else "scrape_failed",
+        )
+        if raw_content:
+            hydrated_count += 1
+        time.sleep(0.5)
+
+    return hydrated_count
+
+
 # --- Core Functions ---
 
 
-def scrape_articles(feed_profile, rss_feeds):  # Added params
-    """Scrapes articles for a specific feed profile."""
+def scrape_articles(feed_profile, rss_feeds, effective_config=None):  # Added params
+    """Ingests RSS metadata first and defers expensive full-content scraping."""
     print(f"\n--- Starting Article Scraping [{feed_profile}] ---")
     new_articles_count = 0
     scrape_run_id = f"{feed_profile}-{datetime.now().strftime('%Y%m%d%H%M%S')}-{uuid4().hex[:8]}"
@@ -194,6 +291,7 @@ def scrape_articles(feed_profile, rss_feeds):  # Added params
             title = entry.get("title", "No Title")
             published_parsed = entry.get("published_parsed")
             published_date = datetime(*published_parsed[:6]) if published_parsed else datetime.now()
+            abstract = extract_entry_abstract(entry)
 
             if not url:
                 scrape_failed_count += 1
@@ -234,34 +332,40 @@ def scrape_articles(feed_profile, rss_feeds):  # Added params
                 print(f"  Found image in RSS: {rss_image_url[:60]}...")
             # --- End RSS Image Check ---
 
-            # --- 2. Fetch Article Content & OG Image ---
-            print("  Fetching article content and OG image...")
-            fetch_result = fetch_article_content_and_og_image(url)
-            raw_content = fetch_result["content"]
-            og_image_url = fetch_result["og_image"]
-            # --- End Fetch ---
-
-            if not raw_content:
-                print(f"  Skipping article, failed to extract main content: {title}")
-                scrape_failed_count += 1
-                continue
-
-            # --- 3. Determine Final Image URL and Save ---
-            final_image_url = rss_image_url if rss_image_url else og_image_url
-            if final_image_url:
-                print(f"  Using image URL: {final_image_url[:60]}...")
-            else:
-                print("  No image found in RSS or OG tags.")
+            eligibility = determine_temporal_eligibility(published_date, effective_config) if effective_config else {
+                "publication_date_verified": published_date,
+                "publication_year": published_date.year if published_date else None,
+                "novelty_window_match": None,
+                "matrix_window_match": None,
+                "eligibility_status": "unknown",
+                "eligibility_reason": "No feed configuration provided.",
+                "editorial_block": feed_profile,
+            }
+            print(
+                "  Metadata ingested:"
+                f" eligibility={eligibility['eligibility_status']},"
+                f" reason={eligibility['eligibility_reason']}"
+            )
 
             article_id = database.add_article(
                 url,
                 title,
                 published_date,
                 feed_source,
-                raw_content,
+                None,
                 feed_profile,
-                final_image_url,
+                rss_image_url,
                 rss_feed_url=feed_url,
+                publication_date_verified=eligibility["publication_date_verified"],
+                publication_year=eligibility["publication_year"],
+                editorial_block=eligibility["editorial_block"],
+                scrape_status="metadata_only",
+                metadata_status="rss_ingested",
+                abstract=abstract,
+                novelty_window_match=eligibility["novelty_window_match"],
+                matrix_window_match=eligibility["matrix_window_match"],
+                eligibility_status=eligibility["eligibility_status"],
+                eligibility_reason=eligibility["eligibility_reason"],
             )
             if article_id:
                 new_articles_count += 1
@@ -344,6 +448,10 @@ def process_articles(feed_profile, effective_config, limit=1000):
     print("\n--- Starting Article Processing ---")
     chat_model = getattr(effective_config, "LLM_CHAT_MODEL", "deepseek/deepseek-chat")
     summary_prompt_template = getattr(effective_config, "PROMPT_ARTICLE_SUMMARY", config.PROMPT_ARTICLE_SUMMARY)
+
+    hydrated_count = hydrate_eligible_articles_content(feed_profile, limit=limit)
+    if hydrated_count:
+        print(f"Hydrated {hydrated_count} eligible articles with full content before labeling.")
 
     label_articles(feed_profile, effective_config, limit=limit)
 
@@ -728,7 +836,7 @@ def main():
     if should_run_all:
         print("\n>>> Running ALL stages <<<")
         if current_rss_feeds:
-            scrape_articles(feed_profile_name, current_rss_feeds)
+            scrape_articles(feed_profile_name, current_rss_feeds, effective_config)
         else:
             print("Skipping scrape stage: No RSS_FEEDS found for profile.")
         process_articles(feed_profile_name, effective_config, limit=args.limit)
@@ -741,7 +849,7 @@ def main():
         if args.scrape:
             if current_rss_feeds:
                 print(f"\n>>> Running ONLY Scrape Articles stage [{feed_profile_name}] <<<")
-                scrape_articles(feed_profile_name, current_rss_feeds)
+                scrape_articles(feed_profile_name, current_rss_feeds, effective_config)
             else:
                 print(f"Cannot run scrape stage: No RSS_FEEDS found for profile '{feed_profile_name}'.")
         if args.label:

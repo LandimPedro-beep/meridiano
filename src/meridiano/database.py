@@ -13,7 +13,14 @@ from sqlalchemy.exc import IntegrityError
 from sqlmodel import and_, asc, desc, func, or_, select
 
 from . import config_base as config
-from .models import Article, Brief, Collection, CollectionArticle, FeedScrapeMetric, get_session
+from .models import (
+    Article,
+    Brief,
+    Collection,
+    CollectionArticle,
+    FeedScrapeMetric,
+    get_session,
+)
 from .models import init_db as model_init_db
 
 logger = logging.getLogger(__name__)
@@ -84,18 +91,42 @@ def _article_to_dict(article: Article) -> Dict[str, Any]:
             "url",
             "title",
             "published_date",
+            "publication_date_verified",
+            "publication_year",
             "feed_source",
             "rss_feed_url",
+            "editorial_block",
             "fetched_at",
+            "scrape_status",
+            "metadata_status",
+            "metadata_extracted_at",
             "raw_content",
+            "abstract",
             "processed_content",
             "embedding",
             "processed_at",
+            "llm_stage_version",
             "keyword_labels",
             "keyword_match",
             "keyword_checked_at",
+            "doi",
+            "journal_name",
+            "authors",
+            "article_type",
+            "citation_count",
+            "citation_source",
+            "is_review",
+            "scientific_domain",
+            "subdomain",
             "cluster_id",
             "impact_score",
+            "relevance_score",
+            "novelty_score",
+            "canonical_score",
+            "novelty_window_match",
+            "matrix_window_match",
+            "eligibility_status",
+            "eligibility_reason",
             "image_url",
             "feed_profile",
         }
@@ -242,10 +273,20 @@ def add_article(
     title: str,
     published_date: datetime,
     feed_source: str,
-    raw_content: str,
+    raw_content: Optional[str],
     feed_profile: str,
     image_url: Optional[str] = None,
     rss_feed_url: Optional[str] = None,
+    publication_date_verified: Optional[datetime] = None,
+    publication_year: Optional[int] = None,
+    editorial_block: Optional[str] = None,
+    scrape_status: Optional[str] = None,
+    metadata_status: Optional[str] = None,
+    abstract: Optional[str] = None,
+    novelty_window_match: Optional[bool] = None,
+    matrix_window_match: Optional[bool] = None,
+    eligibility_status: Optional[str] = None,
+    eligibility_reason: Optional[str] = None,
 ) -> Optional[int]:
     """Adds a new article with optional image URL."""
     with get_session() as session:
@@ -270,12 +311,23 @@ def add_article(
                 url=url,
                 title=title,
                 published_date=published_date,
+                publication_date_verified=publication_date_verified or published_date,
+                publication_year=publication_year if publication_year is not None else (published_date.year if published_date else None),
                 feed_source=feed_source,
                 rss_feed_url=rss_feed_url,
+                editorial_block=editorial_block or feed_profile,
                 raw_content=raw_content,
+                abstract=abstract,
                 image_url=image_url,
                 feed_profile=feed_profile,
                 fetched_at=datetime.now(),
+                scrape_status=scrape_status or ("scraped" if raw_content else "metadata_only"),
+                metadata_status=metadata_status or "raw_scrape",
+                metadata_extracted_at=datetime.now(),
+                novelty_window_match=novelty_window_match,
+                matrix_window_match=matrix_window_match,
+                eligibility_status=eligibility_status,
+                eligibility_reason=eligibility_reason,
             )
             session.add(article)
             session.commit()
@@ -285,6 +337,47 @@ def add_article(
         except IntegrityError:
             session.rollback()
             return None
+
+
+def get_articles_pending_content_scrape(feed_profile: str, limit: int = 50) -> List[Dict[str, Any]]:
+    """Gets eligible articles that still need the expensive full-content scrape."""
+    with get_session() as session:
+        statement = (
+            select(Article)
+            .where(
+                and_(
+                    Article.feed_profile == feed_profile,
+                    Article.eligibility_status == "eligible",
+                    or_(Article.raw_content.is_(None), Article.raw_content == ""),
+                )
+            )
+            .order_by(desc(Article.published_date), desc(Article.fetched_at))
+            .limit(limit)
+        )
+        articles = session.exec(statement).all()
+        return [_article_to_dict(article) for article in articles]
+
+
+def update_article_content_scrape(
+    article_id: int,
+    raw_content: Optional[str],
+    image_url: Optional[str] = None,
+    abstract: Optional[str] = None,
+    scrape_status: Optional[str] = None,
+) -> None:
+    """Stores results from the expensive full-article scrape stage."""
+    with get_session() as session:
+        statement = select(Article).where(Article.id == article_id)
+        article = session.exec(statement).first()
+        if article:
+            article.raw_content = raw_content
+            if image_url:
+                article.image_url = image_url
+            if abstract and not article.abstract:
+                article.abstract = abstract
+            article.scrape_status = scrape_status or ("scraped" if raw_content else "scrape_failed")
+            session.add(article)
+            session.commit()
 
 
 def record_feed_scrape_metric(
@@ -473,6 +566,7 @@ def update_article_processing(article_id: int, processed_content: str, embedding
             article.processed_content = processed_content
             article.embedding = json.dumps(embedding) if embedding else None
             article.processed_at = datetime.now()
+            article.llm_stage_version = article.llm_stage_version or "v1"
             session.add(article)
             session.commit()
 

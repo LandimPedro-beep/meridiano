@@ -9,32 +9,6 @@ PUBLICATION_WINDOW_DAYS = 7
 TARGET_WEEKLY_ARTICLE_COUNT = 10
 
 RSS_FEEDS = [
-    "http://feeds.nature.com/nchembio/rss/current",  # Nature Chemical Biology
-    "http://feeds.nature.com/nbt/rss/current",  # Nature Biotechnology
-    "http://feeds.nature.com/nmeth/rss/current",  # Nature Methods
-    "https://www.cell.com/cell/archive?publicationCode=cell&amp;rss=yes",  # Cell
-    "https://www.cell.com/molecular-cell/archive?publicationCode=molcel&amp;rss=yes",  # Molecular Cell
-    "https://www.cell.com/cell-reports/archive?publicationCode=celrep&amp;rss=yes",  # Cell Reports
-    "https://pubs.acs.org/action/showFeed?type=etoc&feed=rss&jc=achre4",  # Accounts of Chemical Research
-    "https://pubs.acs.org/action/showFeed?type=axatoc&feed=rss&jc=abmcb8",  # ACS Bio & Med Chem Au
-    "https://pubs.acs.org/action/showFeed?type=axatoc&feed=rss&jc=acbcct",  # ACS Chemical Biology
-    "https://pubs.acs.org/action/showFeed?type=axatoc&feed=rss&jc=bichaw",  # Biochemistry
-    "https://pubs.acs.org/action/showFeed?type=axatoc&feed=rss&jc=bomaf6",  # Biomacromolecules
-    "http://feeds.nature.com/ncb/rss/current",  # Nature Cell Biology
-    "http://feeds.nature.com/nchem/rss/current",  # Nature Chemistry
-    "http://feeds.nature.com/ng/rss/current",  # Nature Genetics
-    "http://feeds.nature.com/nmicrobiol/rss/current",  # Nature Microbiology
-    "http://feeds.nature.com/nsmb/rss/current",  # Nature Structural & Molecular Biology
-    "http://bmcbiochem.biomedcentral.com/articles/most-recent/rss.xml",  # BMC Biochemistry
-    "http://bmcbiol.biomedcentral.com/articles/most-recent/rss.xml",  # BMC Biology
-    "http://bmcmicrobiol.biomedcentral.com/articles/most-recent/rss.xml",  # BMC Microbiology
-    "http://bmcmolbiol.biomedcentral.com/articles/most-recent/rss.xml",  # BMC Molecular Biology
-    "https://academic.oup.com/rss/site_5303/3169.xml",  # The Journal of Biochemistry
-    "http://rss.sciencedirect.com/publication/science/00063061",  # Bioorganic Chemistry
-    "http://rss.sciencedirect.com/publication/science/09680896",  # Bioorganic & Medicinal Chemistry
-    "http://rss.sciencedirect.com/publication/science/0960894X",  # Bioorganic & Medicinal Chemistry Letters
-    "http://rss.sciencedirect.com/publication/science/0020711X",  # International Journal of Biochemistry
-    "http://rss.sciencedirect.com/publication/science/01620134",  # Journal of Inorganic Biochemistry
     "http://rss.sciencedirect.com/publication/science/0022328X",  # Journal of Organometallic Chemistry
     "http://rss.sciencedirect.com/publication/science/13595113",  # Process Biochemistry
 ]

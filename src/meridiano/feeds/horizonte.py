@@ -1,132 +1,150 @@
+BLOCK_ID = "horizonte"
+BLOCK_NAME = "Horizonte"
+BLOCK_DESCRIPTION = (
+    "Bloco semanal de panorama cientifico amplo. "
+    "Este bloco deve privilegiar artigos cientificos publicados nos ultimos 7 dias "
+    "com relevancia global nas diversas areas da quimica e fronteiras relacionadas."
+)
+EDITORIAL_CADENCE = "weekly"
+PUBLICATION_WINDOW_DAYS = 7
+TARGET_WEEKLY_ARTICLE_COUNT = 15
+
 RSS_FEEDS = [
-  "https://pubs.acs.org/action/showFeed?type=axatoc&feed=rss&jc=aaembp", # ACS Applied Materials & Interfaces
-  "https://pubs.acs.org/action/showFeed?type=axatoc&feed=rss&jc=aaemcq", # ACS Applied Energy Materials
-  "https://pubs.acs.org/action/showFeed?type=axatoc&feed=rss&jc=aanmf6", # ACS Applied Nano Materials
-  "https://pubs.acs.org/action/showFeed?type=axatoc&feed=rss&jc=accacs", # ACS Catalysis
-  "https://pubs.acs.org/action/showFeed?type=axatoc&feed=rss&jc=acncdm", # ACS Chemical Neuroscience
-  "https://pubs.acs.org/action/showFeed?type=axatoc&feed=rss&jc=aesccq", # ACS Earth and Space Chemistry
-  "https://pubs.acs.org/action/showFeed?type=axatoc&feed=rss&jc=aeclc7", # ACS Electrochemistry
-  "https://pubs.acs.org/action/showFeed?type=axatoc&feed=rss&jc=aidcbc", # ACS Infectious Diseases
-  "https://pubs.acs.org/action/showFeed?type=axatoc&feed=rss&jc=cmatex", # ACS Chemestry of Materials
-  "https://pubs.acs.org/action/showFeed?type=axatoc&feed=rss&jc=aoiab5", # ACS Organic & Inorganic Au
-  "https://pubs.acs.org/action/showFeed?type=axatoc&feed=rss&jc=ancham", # ACS Analytical Chemistry
-  "https://pubs.acs.org/action/showFeed?type=axatoc&feed=rss&jc=asbcd6", # ACS Syntetic Biology
-  "https://pubs.acs.org/action/showFeed?type=axatoc&feed=rss&jc=crtoec", # ACS Research in Toxicology
-  "https://pubs.acs.org/action/showFeed?type=axatoc&feed=rss&jc=inocaj", # ACS Inorganic Chemistry
-  "https://pubs.acs.org/action/showFeed?type=axatoc&feed=rss&jc=jacsat", # Journal of the American Chemical Society
-  "https://pubs.acs.org/action/showFeed?type=axatoc&feed=rss&jc=jctcce", # Journal of Chemical Theory and Computation
-  "https://pubs.acs.org/action/showFeed?type=axatoc&feed=rss&jc=jcisd8", # Journal of Chemical Information and Modeling
-  "https://pubs.acs.org/action/showFeed?type=axatoc&feed=rss&jc=jmcmar", # Journal of Medicinal Chemistry
-  "https://pubs.acs.org/action/showFeed?type=axatoc&feed=rss&jc=joceah", # Journal of Organic Chemistry
-  "https://pubs.acs.org/action/showFeed?type=axatoc&feed=rss&jc=jpcafh", # Journal of Physical Chemistry A
-  "https://pubs.acs.org/action/showFeed?type=axatoc&feed=rss&jc=orgnd7", # ACS Organometallics
-  "https://pubs.acs.org/action/showFeed?type=axatoc&feed=rss&jc=pstoco", # ACS Polymers
-  "http://feeds.nature.com/nbt/rss/current",  # Nature Biotechnology
-  "http://feeds.nature.com/nm/rss/current", # Nature Materials
-  "http://feeds.nature.com/bjc/rss/current", # British Journal of Cancer
-  "http://feeds.nature.com/celldisc/rss/current", # Cell Discovery
-  "http://feeds.nature.com/srep/rss/current", # Scientific Reports
-  "http://science.sciencemag.org/rss/current.xml", # Science
-  "http://bmccancer.biomedcentral.com/articles/most-recent/rss.xml", # BMC Cancer
-  "http://bmccellbiol.biomedcentral.com/articles/most-recent/rss.xml", # BMC Cell Biology
-  "http://bmcgenet.biomedcentral.com/articles/most-recent/rss.xml", # BMC Genetics
-  "http://journal.frontiersin.org/journal/chemistry/rss", # Frontiers in Chemistry
-  "http://iopscience.iop.org/1674-0068/?rss=1", # Chinese Journal of Chemical Physics
-  "http://rss.sciencedirect.com/publication/science/18785352", # Science Direct Arabian Journal of Chemistry
-  "http://rss.sciencedirect.com/publication/science/00039861", # Science Direct Archives of Biochemistry and Biophysics
-  "http://rss.sciencedirect.com/publication/science/10018417", # Science Direct Chinese Chemical Letters
-  "http://rss.sciencedirect.com/publication/science/2210271X", # Science Direct Computational and Theoretical Chemistry
-  "http://rss.sciencedirect.com/publication/science/02235234", # Science Direct European Journal of Medicinal Chemistry
-  "http://rss.sciencedirect.com/publication/science/09924361", # Science Direct European Journal of Organic Chemistry
-  "http://rss.sciencedirect.com/publication/science/13877003", # Science Direct Inorganic Chemistry Communications
-  
-
-
-
+    "https://pubs.acs.org/action/showFeed?type=axatoc&feed=rss&jc=aaembp",  # ACS Applied Materials & Interfaces
+    "https://pubs.acs.org/action/showFeed?type=axatoc&feed=rss&jc=aaemcq",  # ACS Applied Energy Materials
+    "https://pubs.acs.org/action/showFeed?type=axatoc&feed=rss&jc=aanmf6",  # ACS Applied Nano Materials
+    "https://pubs.acs.org/action/showFeed?type=axatoc&feed=rss&jc=accacs",  # ACS Catalysis
+    "https://pubs.acs.org/action/showFeed?type=axatoc&feed=rss&jc=acncdm",  # ACS Chemical Neuroscience
+    "https://pubs.acs.org/action/showFeed?type=axatoc&feed=rss&jc=aesccq",  # ACS Earth and Space Chemistry
+    "https://pubs.acs.org/action/showFeed?type=axatoc&feed=rss&jc=aeclc7",  # ACS Electrochemistry
+    "https://pubs.acs.org/action/showFeed?type=axatoc&feed=rss&jc=aidcbc",  # ACS Infectious Diseases
+    "https://pubs.acs.org/action/showFeed?type=axatoc&feed=rss&jc=cmatex",  # Chemistry of Materials
+    "https://pubs.acs.org/action/showFeed?type=axatoc&feed=rss&jc=aoiab5",  # ACS Organic & Inorganic Au
+    "https://pubs.acs.org/action/showFeed?type=axatoc&feed=rss&jc=ancham",  # Analytical Chemistry
+    "https://pubs.acs.org/action/showFeed?type=axatoc&feed=rss&jc=asbcd6",  # ACS Synthetic Biology
+    "https://pubs.acs.org/action/showFeed?type=axatoc&feed=rss&jc=crtoec",  # Chemical Research in Toxicology
+    "https://pubs.acs.org/action/showFeed?type=axatoc&feed=rss&jc=inocaj",  # Inorganic Chemistry
+    "https://pubs.acs.org/action/showFeed?type=axatoc&feed=rss&jc=jacsat",  # JACS
+    "https://pubs.acs.org/action/showFeed?type=axatoc&feed=rss&jc=jctcce",  # Journal of Chemical Theory and Computation
+    "https://pubs.acs.org/action/showFeed?type=axatoc&feed=rss&jc=jcisd8",  # Journal of Chemical Information and Modeling
+    "https://pubs.acs.org/action/showFeed?type=axatoc&feed=rss&jc=jmcmar",  # Journal of Medicinal Chemistry
+    "https://pubs.acs.org/action/showFeed?type=axatoc&feed=rss&jc=joceah",  # Journal of Organic Chemistry
+    "https://pubs.acs.org/action/showFeed?type=axatoc&feed=rss&jc=jpcafh",  # Journal of Physical Chemistry A
+    "https://pubs.acs.org/action/showFeed?type=axatoc&feed=rss&jc=orgnd7",  # Organometallics
+    "https://pubs.acs.org/action/showFeed?type=axatoc&feed=rss&jc=pstoco",  # Macromolecules / polymers feed family
+    "http://feeds.nature.com/nbt/rss/current",  # Nature Biotechnology
+    "http://feeds.nature.com/nm/rss/current",  # Nature Materials
+    "http://feeds.nature.com/bjc/rss/current",  # British Journal of Cancer
+    "http://feeds.nature.com/celldisc/rss/current",  # Cell Discovery
+    "http://feeds.nature.com/srep/rss/current",  # Scientific Reports
+    "http://science.sciencemag.org/rss/current.xml",  # Science
+    "http://bmccancer.biomedcentral.com/articles/most-recent/rss.xml",  # BMC Cancer
+    "http://bmccellbiol.biomedcentral.com/articles/most-recent/rss.xml",  # BMC Cell Biology
+    "http://bmcgenet.biomedcentral.com/articles/most-recent/rss.xml",  # BMC Genetics
+    "http://journal.frontiersin.org/journal/chemistry/rss",  # Frontiers in Chemistry
+    "http://iopscience.iop.org/1674-0068/?rss=1",  # Chinese Journal of Chemical Physics
+    "http://rss.sciencedirect.com/publication/science/18785352",  # Arabian Journal of Chemistry
+    "http://rss.sciencedirect.com/publication/science/00039861",  # Archives of Biochemistry and Biophysics
+    "http://rss.sciencedirect.com/publication/science/10018417",  # Chinese Chemical Letters
+    "http://rss.sciencedirect.com/publication/science/2210271X",  # Computational and Theoretical Chemistry
+    "http://rss.sciencedirect.com/publication/science/02235234",  # European Journal of Medicinal Chemistry
+    "http://rss.sciencedirect.com/publication/science/09924361",  # European Journal of Organic Chemistry
+    "http://rss.sciencedirect.com/publication/science/13877003",  # Inorganic Chemistry Communications
 ]
+
 FEED_KEYWORDS = [
-  "cybersecurity",
-  "vulnerability",
-  "ransomware",
-  "data breach",
-  "malware",
-  "zero-day",
-  "threat intelligence",
-  "incident response",
-  "supply chain attack",
-  "critical infrastructure",
+    "quimica organica",
+    "quimica inorganica",
+    "quimica analitica",
+    "fisico-quimica",
+    "quimica de materiais",
+    "catálise",
+    "biologia quimica",
+    "quimica medicinal",
+    "metodos computacionais",
+    "novidades cientificas amplas",
 ]
 
-# Used in process_articles (operates globally, so uses default)
-PROMPT_ARTICLE_SUMMARY = "Summarize the key points of this news article objectively in 3-5 sentences. Identify the main topics covered. Only include the result of the summarization, don't preface it with any text.\n\nArticle:\n{article_content}"
+PROMPT_ARTICLE_KEYWORD_LABELING = """
+Analise rapidamente este artigo cientifico e retorne apenas JSON valido.
 
-# Used in rate_articles (operates globally, so uses default)
-PROMPT_IMPACT_RATING = """Analyze the following information security article summary and estimate its overall real-world impact.
+Palavras-chave prioritarias deste bloco:
+{feed_keywords_text}
 
-Evaluate impact using security-relevant factors such as:
-- Scope of affected systems (single org vs widespread/global)
-- Severity of impact on the CIA triad (confidentiality, integrity, availability)
-- Exploitability (theoretical vs proven, ease of exploitation)
-- Evidence of active exploitation or real-world attacks
-- Number and type of affected organizations/users
-- Supply-chain implications
-- Availability of mitigations or patches
-- Regulatory, legal, or geopolitical consequences
-- Potential long-term or systemic security implications
+Contexto do bloco:
+- O bloco Horizonte cobre novidades cientificas amplas no universo da quimica.
+- Priorize artigos que ajudem a mapear tendencias, avancos metodologicos e temas de impacto amplo.
+- Defina "matched" como true somente se o artigo fizer sentido como panorama cientifico relevante.
 
-Be extremely critical and conservative when assigning scores. Higher scores should be reserved only for rare, high-impact security events with clear, demonstrated consequences.
+Formato obrigatorio:
+{{"labels":["rotulo 1","rotulo 2"],"matched":true}}
 
-Rate the impact on a scale of 1 to 10, using these guidelines:
+Titulo:
+{article_title}
 
-1–2: Minimal security significance.
-Informational, academic, or niche content with no immediate risk.
-Examples:
-- A theoretical vulnerability with no proof of concept
-- A vendor blog about best practices
-- A minor bug affecting a rarely used feature
+Artigo:
+{article_content}
 
-3–4: Limited or localized security relevance.
-Affects a small number of users or a specific product with low severity.
-Examples:
-- A low-severity vulnerability in a single product
-- A minor breach with no sensitive data exposed
-- Security updates for non-critical systems
+Responda em portugues brasileiro.
+"""
 
-5–6: Moderately significant security impact.
-Affects multiple organizations or a widely used product, but with mitigations available or limited damage.
-Examples:
-- A medium-to-high CVSS vulnerability in common software
-- A confirmed breach affecting one major organization
-- A security policy or regulation change impacting an industry
+PROMPT_ARTICLE_SUMMARY = """
+Resuma os pontos-chave deste artigo cientifico em 3 a 5 frases objetivas.
+Se atenha ao conteudo do artigo, sem extrapolar e sem adicionar informacoes externas.
+Priorize area cientifica, descoberta principal, tecnica ou implicacao ampla para a comunidade.
+Inclua apenas o resumo final, em portugues brasileiro.
 
-7–8: Highly significant security event.
-Widespread impact, active exploitation, or serious operational disruption.
-Examples:
-- A zero-day exploited in the wild affecting many organizations
-- A major supply-chain compromise
-- A large-scale ransomware campaign disrupting critical services
+Artigo:
+{article_content}
+"""
 
-9–10: Extraordinary and historic security impact.
-Global, systemic, and long-lasting consequences for the security landscape.
-Examples:
-- Internet-wide exploitation of a core protocol or library
-- A catastrophic breach affecting critical infrastructure across countries
-- A security incident fundamentally reshaping global cyber defense practices
+PROMPT_IMPACT_RATING = """
+Analise o resumo do artigo e estime sua relevancia para o bloco Horizonte.
 
-Key Reminder: Scores of 9–10 should be exceedingly rare and reserved for truly world-defining security events. Always err toward a lower score unless the impact is clearly demonstrated, widespread, and severe.
+Considere:
+- alcance para a comunidade cientifica
+- potencial de sinalizar tendencia importante
+- amplitude tematica dentro da quimica
+- relevancia metodologica ou interdisciplinar
+- interesse para pesquisadores fora do nicho imediato do artigo
 
-Summary:
+Use uma escala de 1 a 10:
+1-2: interesse muito localizado e pouco util como panorama.
+3-4: relevancia limitada a um nicho estreito.
+5-6: artigo relevante para uma subarea, com valor moderado para o panorama.
+7-8: forte relevancia ampla, com bom valor de atualizacao cientifica geral.
+9-10: artigo raro, transversal e altamente importante para mapear o estado da ciencia.
+
+Resumo:
 "{summary}"
 
-Output ONLY the integer number representing your rating (1–10)."""
+Retorne SOMENTE o numero inteiro de 1 a 10.
+"""
 
-# Used in generate_brief (can be overridden per profile)
-# Use default
+PROMPT_CLUSTER_ANALYSIS = """
+Estes sao resumos de artigos cientificos potencialmente relacionados do bloco semanal '{feed_profile}'.
 
-# Used in generate_brief (can be overridden per profile)
+{cluster_summaries_text}
+
+Identifique qual tendencia, eixo metodologico ou frente cientifica ampla organiza o grupo.
+Resuma em 3 a 5 frases o que este conjunto revela sobre o panorama cientifico atual.
+Se os artigos nao forem realmente relacionados, diga isso claramente.
+
+Responda em portugues brasileiro.
+"""
+
 PROMPT_BRIEF_SYNTHESIS = """
-You are an AI assistant writing a daily intelligence briefing on information security using Markdown. The quality of this briefing is vital. Synthesize the following analyzed news clusters into a coherent, high-level executive summary. Start with the 2-3 most critical overarching themes globally based *only* on these inputs. Then, provide concise bullet points summarizing key developments within the most significant clusters (roughly 7-10 clusters) and a paragraph summarizing connections and conclusions between the points. Maintain an objective, analytical tone. Avoid speculation. Just include the briefing, don't preface it with any unecessary text.\n\n
+Voce esta escrevendo a sintese semanal do bloco Horizonte em Markdown.
+Este bloco deve oferecer panorama amplo das novidades mais importantes no universo da quimica.
 
-Analyzed News Clusters (Most significant first):
+Com base apenas nos grupos analisados:
+- apresente primeiro as tendencias cientificas mais amplas da semana
+- depois organize topicos curtos por area, metodo ou direcao emergente
+- encerre com uma leitura de conjunto sobre para onde o panorama cientifico parece estar se movendo
+
+Mantenha tom tecnico, claro e objetivo.
+Nao especule e nao invente informacoes.
+
+Grupos analisados:
 {cluster_analyses_text}
 """

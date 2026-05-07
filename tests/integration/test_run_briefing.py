@@ -3,7 +3,7 @@ import shutil
 import sys
 import tempfile
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 from unittest.mock import MagicMock, patch
 
 import feedparser
@@ -69,6 +69,7 @@ def test_full_workflow(mock_fetch, mock_parse, setup_integration):
 
     # Mock RSS Feed with multiple entries
     entries = []
+    recent_struct = (datetime.now() - timedelta(days=1)).timetuple()
     for i in range(1, 6):  # Create 5 articles
         mock_entry = MagicMock()
         # We need to bind i to the lambda scope
@@ -76,7 +77,7 @@ def test_full_workflow(mock_fetch, mock_parse, setup_integration):
             lambda i=i: lambda k, default=None: {
                 "link": f"http://example.com/article{i}",
                 "title": f"Test Article {i}",
-                "published_parsed": time.struct_time((2023, 1, 1, 12, 0, 0, 6, 1, 0)),
+                "published_parsed": recent_struct,
             }.get(k, default)
         )()
         entries.append(mock_entry)
@@ -128,8 +129,12 @@ def test_full_workflow(mock_fetch, mock_parse, setup_integration):
     feed_profile = "test_profile"
     rss_feeds = ["http://example.com/rss"]
 
+    class DummyScrapeConfig:
+        BLOCK_ID = "vetor"
+        PUBLICATION_WINDOW_DAYS = 7
+
     # 1. Scrape
-    run_briefing.scrape_articles(feed_profile, rss_feeds)
+    run_briefing.scrape_articles(feed_profile, rss_feeds, DummyScrapeConfig())
 
     # Verify Article in DB
     with database.get_session() as session:
@@ -262,20 +267,25 @@ def test_edge_cases(setup_integration):
     mock_feed = feedparser.FeedParserDict()
     mock_feed.bozo = 0  # No errors
     mock_feed.feed = feedparser.FeedParserDict({"title": "Test Feed"})
+    recent_struct = (datetime.now() - timedelta(days=1)).timetuple()
     mock_feed.entries = [
         feedparser.FeedParserDict(
             {
                 "title": "Existing Article",
                 "link": "http://example.com/existing",
-                "published_parsed": time.struct_time((2023, 1, 1, 12, 0, 0, 6, 1, 0)),
+                "published_parsed": recent_struct,
                 "summary": "Summary",
                 "source": {"title": "Test Source"},
             }
         )
     ]
 
+    class DummyScrapeConfig:
+        BLOCK_ID = "vetor"
+        PUBLICATION_WINDOW_DAYS = 7
+
     with patch("meridiano.run_briefing.feedparser.parse", return_value=mock_feed):
-        run_briefing.scrape_articles(feed_profile, rss_feeds)
+        run_briefing.scrape_articles(feed_profile, rss_feeds, DummyScrapeConfig())
 
     # Verify NO new article added (count should be 1)
     with database.get_session() as session:
@@ -315,6 +325,8 @@ def test_feed_feedback_summary(mock_fetch, mock_parse, setup_integration):
     feed_profile = "feedback_profile"
     rss_feed_url = "http://example.com/rss"
 
+    recent_accepted = (datetime.now() - timedelta(days=1)).timetuple()
+    recent_rejected = (datetime.now() - timedelta(days=2)).timetuple()
     mock_feed = feedparser.FeedParserDict()
     mock_feed.bozo = 0
     mock_feed.feed = feedparser.FeedParserDict({"title": "Feedback Feed"})
@@ -323,21 +335,21 @@ def test_feed_feedback_summary(mock_fetch, mock_parse, setup_integration):
             {
                 "title": "Accepted Article",
                 "link": "http://example.com/accepted",
-                "published_parsed": time.struct_time((2023, 1, 1, 12, 0, 0, 6, 1, 0)),
+                "published_parsed": recent_accepted,
             }
         ),
         feedparser.FeedParserDict(
             {
                 "title": "Rejected Article",
                 "link": "http://example.com/rejected",
-                "published_parsed": time.struct_time((2023, 1, 1, 12, 5, 0, 6, 1, 0)),
+                "published_parsed": recent_rejected,
             }
         ),
         feedparser.FeedParserDict(
             {
                 "title": "Failed Scrape Article",
                 "link": "http://example.com/failed",
-                "published_parsed": time.struct_time((2023, 1, 1, 12, 10, 0, 6, 1, 0)),
+                "published_parsed": recent_accepted,
             }
         ),
     ]
@@ -366,6 +378,8 @@ def test_feed_feedback_summary(mock_fetch, mock_parse, setup_integration):
     mock_embedding.return_value = {"data": [{"embedding": [0.1, 0.2, 0.3]}]}
 
     class DummyConfig:
+        BLOCK_ID = "vetor"
+        PUBLICATION_WINDOW_DAYS = 7
         LLM_CHAT_MODEL = "test-model"
         FEED_KEYWORDS = ["bio"]
         PROMPT_ARTICLE_KEYWORD_LABELING = (
@@ -375,7 +389,7 @@ def test_feed_feedback_summary(mock_fetch, mock_parse, setup_integration):
         PROMPT_ARTICLE_SUMMARY = "Summarize: {article_content}"
         EMBEDDING_MODEL = "test-embedding"
 
-    run_briefing.scrape_articles(feed_profile, [rss_feed_url])
+    run_briefing.scrape_articles(feed_profile, [rss_feed_url], DummyConfig())
     run_briefing.process_articles(feed_profile, DummyConfig())
 
     summary = database.get_latest_feed_feedback_summary(feed_profile)
@@ -385,10 +399,10 @@ def test_feed_feedback_summary(mock_fetch, mock_parse, setup_integration):
     assert row["rss_feed_url"] == rss_feed_url
     assert row["feed_source"] == "Feedback Feed"
     assert row["detected_count"] == 3
-    assert row["scrape_success_count"] == 2
-    assert row["scrape_failed_count"] == 1
+    assert row["scrape_success_count"] == 3
+    assert row["scrape_failed_count"] == 0
     assert row["duplicate_count"] == 0
-    assert row["stored_count"] == 2
+    assert row["stored_count"] == 3
     assert row["processed_count"] == 1
     assert row["keyword_accepted_count"] == 1
     assert row["keyword_rejected_count"] == 1

@@ -1,75 +1,118 @@
-RSS_FEEDS = [
-    "hhttps://pubs.acs.org/action/showFeed?type=axatoc&feed=rss&jc=chreay", # ACS Chemical Reviews
-    "http://feeds.nature.com/nrc/rss/current", # Nature Reviews Cancer
-    "http://feeds.nature.com/nrdp/rss/current", # Nature Reviews Dieses Primers
-    "http://feeds.nature.com/nrg/rss/current", # Nature Reviews Genetics
-    "http://feeds.nature.com/nrmicro/rss/current", # Nature Reviews Microbiology
-    "http://feeds.nature.com/nrm/rss/current", # Nature Reviews Molecular Cell Biology
-    "http://iopscience.iop.org/0036-021X/?rss=1", #Russian Chemical Reviews 
-]
-FEED_KEYWORDS = [
-    "tecnologia",
-    "inteligência artificial",
-    "hardware",
-    "chips",
-    "software",
-    "startups",
-    "inovação",
-    "ciência",
-    "política tecnológica",
-    "privacidade",
-]
-
-# Used in process_articles (operates globally, so uses default)
-PROMPT_ARTICLE_SUMMARY = (
-    "Summarize the key points of this news article objectively in 3-5 sentences."
-    "Add double line breaks between paragraphs."
-    "Identify the main topics covered. Only include the result of the summarization, don't preface it with any text.\n\nArticle:\n{article_content}"
+BLOCK_ID = "matriz"
+BLOCK_NAME = "Matriz"
+BLOCK_DESCRIPTION = (
+    "Bloco semanal de artigos maduros, canonicos e academicamente consolidados. "
+    "Este bloco deve privilegiar artigos cientificos publicados entre 10 e 15 anos atras "
+    "e com forte relevancia para a area de interesse do usuario."
 )
+EDITORIAL_CADENCE = "weekly"
+PUBLICATION_MIN_AGE_YEARS = 10
+PUBLICATION_MAX_AGE_YEARS = 15
+TARGET_WEEKLY_ARTICLE_COUNT = 10
 
-# Used in rate_articles (operates globally, so uses default)
-PROMPT_IMPACT_RATING = """Analyze the following article summary and estimate its overall impact.
-Consider factors like newsworthiness, originality, geographic scope (local vs global), number of people affected,
-severity, and potential long-term consequences. Be extremely critical and conservative when assigning scores—higher
-scores should reflect truly exceptional or rare events.
+RSS_FEEDS = [
+    "https://pubs.acs.org/action/showFeed?type=axatoc&feed=rss&jc=chreay",  # Chemical Reviews
+    "http://feeds.nature.com/nrc/rss/current",  # Nature Reviews Cancer
+    "http://feeds.nature.com/nrdp/rss/current",  # Nature Reviews Disease Primers
+    "http://feeds.nature.com/nrg/rss/current",  # Nature Reviews Genetics
+    "http://feeds.nature.com/nrmicro/rss/current",  # Nature Reviews Microbiology
+    "http://feeds.nature.com/nrm/rss/current",  # Nature Reviews Molecular Cell Biology
+    "http://iopscience.iop.org/0036-021X/?rss=1",  # Russian Chemical Reviews
+]
 
-Rate the impact on a scale of 1 to 10, using these guidelines:
+FEED_KEYWORDS = [
+    "bioquimica",
+    "biologia molecular",
+    "quimica biologica",
+    "genetica",
+    "genomica",
+    "sinalizacao celular",
+    "metabolismo",
+    "estrutura de proteinas",
+    "metodos fundamentais",
+    "artigo de revisao",
+]
 
-1-2: Minimal significance. Niche interest or local news with no broader relevance.
-Example: A review of a local restaurant or a minor product launch.
+PROMPT_ARTICLE_KEYWORD_LABELING = """
+Analise rapidamente este artigo cientifico e retorne apenas JSON valido.
 
-3-4: Regionally notable. Pop culture happenings, local events, or community-focused stories.
-Example: A local mayor’s resignation or a regional festival.
+Palavras-chave prioritarias deste bloco:
+{feed_keywords_text}
 
-5-6: Regionally significant or moderately global. Affects multiple communities or industries.
-Example: A nationwide strike or a major company bankruptcy.
+Contexto do bloco:
+- O bloco Matriz reune artigos maduros e academicamente incontornaveis.
+- Priorize artigos de revisao, sinteses conceituais, marcos metodologicos e trabalhos de referencia.
+- Defina "matched" como true somente se o artigo for central para a area e fizer sentido como leitura de dominio.
 
-7-8: Highly significant. Major international relevance, significant disruptions, or wide-reaching implications.
-Example: A large-scale natural disaster, global health alerts, or a major geopolitical shift.
+Formato obrigatorio:
+{{"labels":["rotulo 1","rotulo 2"],"matched":true}}
 
-9-10: Extraordinary and historic. Global, severe, and long-lasting implications.
-Example: Declaration of war, groundbreaking global treaties, or critical climate crises.
+Titulo:
+{article_title}
 
-Key Reminder: Scores of 9-10 should be exceedingly rare and reserved for world-defining events.
-Always err on the side of a lower score unless the impact is undeniably significant.
+Artigo:
+{article_content}
 
-Summary:
+Responda em portugues brasileiro.
+"""
+
+PROMPT_ARTICLE_SUMMARY = """
+Resuma este artigo cientifico em 3 a 5 frases, com foco em sua contribuicao conceitual e durabilidade academica.
+Se atenha ao conteudo do artigo e nao adicione informacoes externas.
+Priorize ideia central, sintese do campo, marco metodologico ou consolidacao teorica.
+Inclua apenas o resumo final, em portugues brasileiro.
+
+Artigo:
+{article_content}
+"""
+
+PROMPT_IMPACT_RATING = """
+Analise o resumo do artigo e estime sua relevancia para o bloco Matriz.
+
+Considere:
+- potencial de ser referencia obrigatoria da area
+- valor de consolidacao conceitual
+- importancia metodologica
+- abrangencia do impacto academico
+- utilidade para formacao solida do pesquisador
+
+Use uma escala de 1 a 10:
+1-2: relevancia baixa ou muito periferica.
+3-4: artigo util, mas nao essencial.
+5-6: artigo importante, porem nao claramente canonico.
+7-8: artigo forte, com papel consolidado na area.
+9-10: artigo de referencia, leitura obrigatoria ou marco intelectual evidente.
+
+Resumo:
 "{summary}"
 
-Output ONLY the integer number representing your rating (1-10)."""
+Retorne SOMENTE o numero inteiro de 1 a 10.
+"""
 
-# Used in generate_brief (can be overridden per profile)
-# Use default
+PROMPT_CLUSTER_ANALYSIS = """
+Estes sao resumos de artigos cientificos potencialmente relacionados do bloco semanal '{feed_profile}'.
 
-# Used in generate_brief (can be overridden per profile)
+{cluster_summaries_text}
+
+Identifique qual eixo conceitual, metodologico ou de revisao organiza o grupo.
+Resuma em 3 a 5 frases por que esse conjunto e estrutural para a formacao e atualizacao do pesquisador.
+Se os artigos nao forem realmente relacionados, diga isso claramente.
+
+Responda em portugues brasileiro.
+"""
+
 PROMPT_BRIEF_SYNTHESIS = """
-You are an AI assistant writing a daily intelligence briefing for a tech and politics youtuber using Markdown.
-The quality of this briefing is vital for the development of the channel. Synthesize the following analyzed news
-clusters into a coherent, high-level executive summary. Start with the 2-3 most critical overarching themes globally
-based *only* on these inputs. Then, provide concise bullet points summarizing key developments within the most
-significant clusters (roughly 7-10 clusters) and a paragraph summarizing connections and conclusions between the points.
-Maintain an objective, analytical tone. Avoid speculation. Just include the briefing, don't preface it with any unecessary text. Add double line breaks between paragraphs.\n\n
+Voce esta escrevendo a sintese semanal do bloco Matriz em Markdown.
+Este bloco representa artigos maduros, de dominio obrigatorio, para a area do usuario.
 
-Analyzed News Clusters (Most significant first):
+Com base apenas nos grupos analisados:
+- apresente os principais eixos conceituais e metodologicos selecionados na semana
+- destaque quais leituras parecem mais formativas ou estruturais
+- feche com uma sintese do que o pesquisador precisa dominar ou revisitar
+
+Mantenha tom tecnico, objetivo e editorial.
+Nao especule e nao invente informacoes.
+
+Grupos analisados:
 {cluster_analyses_text}
 """

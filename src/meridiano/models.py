@@ -42,18 +42,42 @@ class Article(SQLModel, table=True):
     url: str = Field(unique=True, index=True)
     title: Optional[str] = None
     published_date: Optional[datetime] = None
+    publication_date_verified: Optional[datetime] = Field(default=None, index=True)
+    publication_year: Optional[int] = Field(default=None, index=True)
     feed_source: Optional[str] = None
     rss_feed_url: Optional[str] = Field(default=None, index=True)
+    editorial_block: Optional[str] = Field(default=None, index=True)
     fetched_at: datetime = Field(default_factory=datetime.now)
+    scrape_status: Optional[str] = Field(default=None, index=True)
+    metadata_status: Optional[str] = Field(default=None, index=True)
+    metadata_extracted_at: Optional[datetime] = Field(default=None, index=True)
     raw_content: Optional[str] = None
+    abstract: Optional[str] = None
     processed_content: Optional[str] = None
     embedding: Optional[str] = None  # JSON string
     processed_at: Optional[datetime] = Field(default=None, index=True)
+    llm_stage_version: Optional[str] = None
     keyword_labels: Optional[str] = None  # JSON string
     keyword_match: Optional[bool] = Field(default=None, index=True)
     keyword_checked_at: Optional[datetime] = Field(default=None, index=True)
+    doi: Optional[str] = Field(default=None, index=True)
+    journal_name: Optional[str] = Field(default=None, index=True)
+    authors: Optional[str] = None  # JSON string or normalized text
+    article_type: Optional[str] = Field(default=None, index=True)
+    citation_count: Optional[int] = Field(default=None, index=True)
+    citation_source: Optional[str] = None
+    is_review: Optional[bool] = Field(default=None, index=True)
+    scientific_domain: Optional[str] = Field(default=None, index=True)
+    subdomain: Optional[str] = Field(default=None, index=True)
     cluster_id: Optional[int] = None
     impact_score: Optional[int] = None
+    relevance_score: Optional[float] = None
+    novelty_score: Optional[float] = None
+    canonical_score: Optional[float] = None
+    novelty_window_match: Optional[bool] = Field(default=None, index=True)
+    matrix_window_match: Optional[bool] = Field(default=None, index=True)
+    eligibility_status: Optional[str] = Field(default=None, index=True)
+    eligibility_reason: Optional[str] = None
     image_url: Optional[str] = None
     feed_profile: str = Field(default="default", index=True)
 
@@ -97,6 +121,35 @@ class Brief(SQLModel, table=True):
     brief_markdown: str
     contributing_article_ids: Optional[str] = None  # JSON string
     feed_profile: str = Field(default="default", index=True)
+
+
+class WeeklyEdition(SQLModel, table=True):
+    """Frozen weekly editorial edition for one block/profile."""
+
+    __tablename__ = "weekly_editions"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    edition_key: str = Field(index=True, unique=True)
+    block_id: str = Field(index=True)
+    feed_profile: str = Field(index=True)
+    week_start_date: datetime = Field(index=True)
+    week_end_date: datetime = Field(index=True)
+    status: str = Field(default="draft", index=True)
+    generated_at: datetime = Field(default_factory=datetime.now, index=True)
+    notes: Optional[str] = None
+    summary_markdown: Optional[str] = None
+
+
+class WeeklyEditionArticle(SQLModel, table=True):
+    """Articles selected into a frozen weekly edition."""
+
+    __tablename__ = "weekly_edition_articles"
+
+    edition_id: Optional[int] = Field(default=None, foreign_key="weekly_editions.id", primary_key=True)
+    article_id: Optional[int] = Field(default=None, foreign_key="articles.id", primary_key=True)
+    rank: Optional[int] = Field(default=None, index=True)
+    inclusion_reason: Optional[str] = None
+    selected_at: datetime = Field(default_factory=datetime.now, index=True)
 
 
 # Collections models (many-to-many association) --------------------------------
@@ -149,9 +202,33 @@ def create_db_and_tables():
     with Session(engine) as session:
         article_column_migrations = [
             ("rss_feed_url", "TEXT"),
+            ("publication_date_verified", "DATETIME"),
+            ("publication_year", "INTEGER"),
+            ("editorial_block", "TEXT"),
+            ("scrape_status", "TEXT"),
+            ("metadata_status", "TEXT"),
+            ("metadata_extracted_at", "DATETIME"),
+            ("abstract", "TEXT"),
+            ("llm_stage_version", "TEXT"),
             ("keyword_labels", "TEXT"),
             ("keyword_match", "BOOLEAN"),
             ("keyword_checked_at", "DATETIME"),
+            ("doi", "TEXT"),
+            ("journal_name", "TEXT"),
+            ("authors", "TEXT"),
+            ("article_type", "TEXT"),
+            ("citation_count", "INTEGER"),
+            ("citation_source", "TEXT"),
+            ("is_review", "BOOLEAN"),
+            ("scientific_domain", "TEXT"),
+            ("subdomain", "TEXT"),
+            ("relevance_score", "REAL"),
+            ("novelty_score", "REAL"),
+            ("canonical_score", "REAL"),
+            ("novelty_window_match", "BOOLEAN"),
+            ("matrix_window_match", "BOOLEAN"),
+            ("eligibility_status", "TEXT"),
+            ("eligibility_reason", "TEXT"),
         ]
         for column_name, column_type in article_column_migrations:
             try:

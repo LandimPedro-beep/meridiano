@@ -1,4 +1,5 @@
 import logging
+import re
 from datetime import datetime
 from urllib.parse import urljoin
 
@@ -77,6 +78,15 @@ def fetch_article_content_and_og_image(url):
         print(f"Error processing content/og:image from {url}: {e}")
         # Still return content if it was extracted before the error
         return {"content": content, "og_image": None}
+
+
+def clean_html_to_text(value):
+    """Best-effort conversion of small HTML snippets from RSS fields to plain text."""
+    if not value:
+        return None
+    text = BeautifulSoup(value, "lxml").get_text(" ", strip=True)
+    text = re.sub(r"\s+", " ", text).strip()
+    return text or None
 
 
 def scrape_single_article_details(article_url):
