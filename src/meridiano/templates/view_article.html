@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en">
-{% set title = "Article: %s" % article.get('title', 'Untitled') %}
+{% set title = "Artigo: %s" % article.get('title', 'Sem título') %}
 {% include 'head.html' %}
 <body>
     <div class="container">
@@ -8,92 +8,92 @@
 
         <div class="article-detail-image-container">
             {% if article.image_url %}
-                <a href="{{ article.url }}" target="_blank" title="View Original Article">
+                <a href="{{ article.url }}" target="_blank" title="Ver Artigo Original">
                     <img src="{{ article.image_url }}"
                          alt="Image for {{ title }}"
                          class="article-detail-image"
                          onerror="this.parentElement.style.display='none'; document.getElementById('detail-placeholder').style.display='flex';">
                 </a>
                 <div id="detail-placeholder" class="article-image-placeholder article-detail-placeholder" style="display: none;">
-                     <i class="fas fa-image"></i> No Image Available
+                     <i class="fas fa-image"></i> Sem Imagem
                  </div>
             {% else %}
                  <div class="article-image-placeholder article-detail-placeholder">
-                     <i class="fas fa-image"></i> No Image Available
+                     <i class="fas fa-image"></i> Sem Imagem
                  </div>
             {% endif %}
         </div>
 
-        <h2>Article Details</h2>
+        <h2>Ficha do Artigo</h2>
 
         <dl class="article-details">
-            <dt>Title</dt>
+            <dt>Título</dt>
             <dd>{{ title }}</dd>
 
-            <dt>Impact Score</dt>
+            <dt>Fator de Impacto</dt>
             <dd>
                 {% if article.impact_score is not none %}
                     <span class="impact-score score-{{ article.impact_score }}" style="display: inline-block; margin-right: 5px;">
                         {{ article.impact_score }}
                     </span> / 10
                 {% else %}
-                    <span class="impact-score score-unknown" style="display: inline-block; margin-right: 5px;">-</span> (Not Rated)
+                    <span class="impact-score score-unknown" style="display: inline-block; margin-right: 5px;">-</span> (Não Avaliado)
                 {% endif %}
             </dd>
 
-            <dt>Keyword Labels</dt>
+            <dt>Rótulos (Keywords)</dt>
             <dd>
                 {% if article.keyword_labels_list %}
                     {{ article.keyword_labels_list | join(', ') }}
                 {% else %}
-                    <em>No labels yet</em>
+                    <em>Sem rótulos</em>
                 {% endif %}
             </dd>
 
-            <dt>Keyword Filter</dt>
+            <dt>Filtro de Keyword</dt>
             <dd>
                 {% if article.keyword_match is sameas true %}
-                    Approved for summary
+                    Aprovado para resumo
                 {% elif article.keyword_match is sameas false %}
-                    Filtered out for this feed
+                    Filtrado (não se aplica a este caderno)
                 {% else %}
-                    Not checked yet
+                    Não verificado
                 {% endif %}
             </dd>
 
-            <dt>AI Summary (Processed Content)</dt>
+            <dt>Notas do Pesquisador (Resumo IA)</dt>
             <dd class="content-block summary-content">
                 {% if article.processed_content_html %}
                     {{ article.processed_content_html | safe }}
                 {% else %}
-                    <em>Not Processed / Summarized Yet</em>
+                    <em>Ainda não processado/resumido</em>
                 {% endif %}
             </dd>
 
-            <dt>Original URL</dt>
+            <dt>URL Original</dt>
             <dd><a href="{{ article['url'] }}" target="_blank">{{ article['url'] }}</a></dd>
 
-            <dt>Source Feed</dt>
+            <dt>Fonte / Feed</dt>
             <dd>{{ article['feed_source'] | default('N/A') }}</dd>
 
-            <dt>Published Date</dt>
+            <dt>Data de Publicação</dt>
             <dd>{{ article['published_date'] | datetimeformat | default('N/A') }}</dd>
 
-            <dt>Fetched Date</dt>
+            <dt>Data de Coleta</dt>
             <dd>{{ article['fetched_at'] | datetimeformat | default('N/A') }}</dd>
 
-            <dt>Processed Date</dt>
+            <dt>Data de Processamento</dt>
             <dd>{{ article['processed_at'] | datetimeformat | default('N/A') }}</dd>
 
-            <dt>Embedding Status</dt>
+            <dt>Status de Embedding</dt>
             <dd>{{ embedding_status }}</dd>
 
-            <dt>Cluster ID</dt>
-            <dd>{{ article['cluster_id'] if article['cluster_id'] is not none else 'Not Clustered' }}</dd>
+            <dt>ID do Agrupamento</dt>
+            <dd>{{ article['cluster_id'] if article['cluster_id'] is not none else 'Não agrupado' }}</dd>
 
             <dt class="collapsible-header">
-                Raw Extracted Content
-                <span class="toggle-icon-container" onclick="toggleRawContent()" title="Toggle Raw Content Visibility">
+                Conteúdo Bruto Extraído
+                <span class="toggle-icon-container" onclick="toggleRawContent()" title="Mostrar/Ocultar Conteúdo Bruto">
                     <i class="fas fa-eye" id="eye-icon"></i>
                     <i class="fas fa-eye-slash" id="eye-slash-icon" style="display: none;"></i>
                 </span>
@@ -102,7 +102,7 @@
                 {% if article.raw_content %}
                     <pre>{{ article.raw_content }}</pre>
                 {% else %}
-                    <em>Raw content not available or failed to extract.</em>
+                    <em>Conteúdo bruto não disponível ou falha na extração.</em>
                 {% endif %}
             </dd>
         </dl>
