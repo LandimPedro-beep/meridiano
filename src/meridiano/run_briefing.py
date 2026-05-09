@@ -182,6 +182,87 @@ def extract_entry_abstract(entry):
     return None
 
 
+def build_keyword_screening_text(article, max_chars=2500):
+    """Builds a compact text payload for cheap keyword triage before full scrape."""
+    parts = []
+    title = (article.get("title") or "").strip()
+    abstract = (article.get("abstract") or "").strip()
+    raw_content = (article.get("raw_content") or "").strip()
+
+    if title:
+        parts.append(f"Title: {title}")
+    if abstract:
+        parts.append(f"Abstract: {abstract}")
+    elif raw_content:
+        parts.append(f"Content: {raw_content[:max_chars]}")
+
+    return "\n\n".join(parts)[:max_chars]
+
+
+def find_keyword_overlaps(text, feed_keywords):
+    """Performs a cheap lexical pass before escalating to an LLM call."""
+    if not text or not feed_keywords:
+        return []
+
+    normalized_text = text.lower()
+    matches = []
+    for keyword in feed_keywords:
+        normalized_keyword = str(keyword).strip().lower()
+        if normalized_keyword and normalized_keyword in normalized_text:
+            matches.append(str(keyword).strip())
+    return matches
+
+
+def cheap_triage_article(article, effective_config):
+    """Runs deterministic low-cost screening before LLM keyword labeling."""
+    screening_text = build_keyword_screening_text(article)
+    feed_keywords = getattr(effective_config, "FEED_KEYWORDS", []) or []
+    has_rich_text = bool((article.get("abstract") or "").strip() or (article.get("raw_content") or "").strip())
+
+    if article.get("eligibility_status") != "eligible":
+        return {
+            "decision": "reject",
+            "labels": ["triage:temporal_reject"],
+            "reason": article.get("eligibility_reason") or "Temporal eligibility rejected.",
+            "screening_text": screening_text,
+        }
+
+    if not article.get("title"):
+        return {
+            "decision": "reject",
+            "labels": ["triage:missing_title"],
+            "reason": "Missing article title.",
+            "screening_text": screening_text,
+        }
+
+    if not screening_text or len(screening_text) < 15:
+        return {
+            "decision": "reject",
+            "labels": ["triage:insufficient_metadata"],
+            "reason": "Insufficient metadata for keyword triage.",
+            "screening_text": screening_text,
+        }
+
+    overlaps = find_keyword_overlaps(screening_text, feed_keywords)
+    if feed_keywords and not overlaps and has_rich_text:
+        return {
+            "decision": "reject",
+            "labels": ["triage:no_keyword_overlap"],
+            "reason": "No cheap lexical overlap with feed keywords.",
+            "screening_text": screening_text,
+        }
+
+    labels = [f"lexical:{label}" for label in overlaps]
+    if not has_rich_text:
+        labels.append("triage:title_only")
+    return {
+        "decision": "llm",
+        "labels": labels,
+        "reason": "Passed cheap triage.",
+        "screening_text": screening_text,
+    }
+
+
 def determine_temporal_eligibility(published_date, effective_config):
     """Computes block-specific temporal eligibility from feed configuration."""
     now = datetime.now()
@@ -231,27 +312,32 @@ def determine_temporal_eligibility(published_date, effective_config):
     return result
 
 
-def hydrate_eligible_articles_content(feed_profile, limit=1000):
+def hydrate_eligible_articles_content(feed_profile, effective_config, limit=1000):
     """Runs the expensive full-page scrape only for already eligible articles."""
-    pending_articles = database.get_articles_pending_content_scrape(feed_profile, limit)
+    pending_articles = database.get_articles_pending_content_scrape(feed_profile, limit, require_keyword_match=True)
     hydrated_count = 0
 
     if not pending_articles:
         return 0
 
-    print(f"Hydrating full content for {len(pending_articles)} eligible articles [{feed_profile}].")
+    print(f"Hydrating full content for {len(pending_articles)} keyword-approved articles [{feed_profile}].")
     for article in pending_articles:
         print(f"Fetching full article content for article ID: {article['id']} - {article['url'][:60]}")
         fetch_result = fetch_article_content_and_og_image(article["url"])
         raw_content = fetch_result["content"]
         og_image_url = fetch_result["og_image"]
         fallback_abstract = article.get("abstract")
+        metadata = dict(fetch_result.get("metadata") or {})
+        verified_date = metadata.get("publication_date_verified") or article.get("publication_date_verified")
+        temporal_metadata = determine_temporal_eligibility(verified_date, effective_config)
+        metadata.update(temporal_metadata)
         database.update_article_content_scrape(
             article["id"],
             raw_content=raw_content,
             image_url=og_image_url,
             abstract=fallback_abstract,
             scrape_status="scraped" if raw_content else "scrape_failed",
+            metadata=metadata,
         )
         if raw_content:
             hydrated_count += 1
@@ -290,7 +376,7 @@ def scrape_articles(feed_profile, rss_feeds, effective_config=None):  # Added pa
             url = entry.get("link")
             title = entry.get("title", "No Title")
             published_parsed = entry.get("published_parsed")
-            published_date = datetime(*published_parsed[:6]) if published_parsed else datetime.now()
+            published_date = datetime(*published_parsed[:6]) if published_parsed else None
             abstract = extract_entry_abstract(entry)
 
             if not url:
@@ -412,21 +498,32 @@ def label_articles(feed_profile, effective_config, limit=1000):
     print(f"Found {len(pending_articles)} articles to label (Limit: {limit}).")
     for article in pending_articles:
         print(f"Labeling article ID: {article['id']} - {article['title']}")
+        cheap_triage = cheap_triage_article(article, effective_config)
+        screening_text = cheap_triage["screening_text"]
+
+        if cheap_triage["decision"] == "reject":
+            labels = cheap_triage["labels"]
+            matched = False
+            database.update_article_keyword_filter(article["id"], labels, matched)
+            labeled_count += 1
+            print(f"  Cheap triage rejected article: {cheap_triage['reason']}")
+            time.sleep(0.1)
+            continue
 
         label_prompt = label_prompt_template.format(
             article_title=article.get("title") or "Untitled",
-            article_content=(article.get("raw_content") or "")[:4000],
+            article_content=screening_text,
             feed_keywords_text=keywords_text,
         )
         response = call_deepseek_chat(label_prompt, model=chat_model)
         parsed = parse_json_from_response(response)
 
         if parsed:
-            labels = normalize_keyword_labels(parsed.get("labels", []))
+            labels = normalize_keyword_labels(cheap_triage["labels"] + parsed.get("labels", []))
             matched = True if not feed_keywords else bool(parsed.get("matched"))
         else:
             print(f"  Warning: invalid keyword filter response for article {article['id']}.")
-            labels = []
+            labels = cheap_triage["labels"]
             matched = not feed_keywords
 
         database.update_article_keyword_filter(article["id"], labels, matched)
@@ -448,14 +545,17 @@ def process_articles(feed_profile, effective_config, limit=1000):
     print("\n--- Starting Article Processing ---")
     chat_model = getattr(effective_config, "LLM_CHAT_MODEL", "deepseek/deepseek-chat")
     summary_prompt_template = getattr(effective_config, "PROMPT_ARTICLE_SUMMARY", config.PROMPT_ARTICLE_SUMMARY)
+    keyword_limit = min(limit, int(getattr(effective_config, "KEYWORD_LABEL_BATCH_LIMIT", limit)))
+    hydrate_limit = min(limit, int(getattr(effective_config, "CONTENT_HYDRATION_BATCH_LIMIT", limit)))
+    processing_limit = min(limit, int(getattr(effective_config, "SUMMARY_PROCESSING_BATCH_LIMIT", limit)))
 
-    hydrated_count = hydrate_eligible_articles_content(feed_profile, limit=limit)
+    label_articles(feed_profile, effective_config, limit=keyword_limit)
+
+    hydrated_count = hydrate_eligible_articles_content(feed_profile, effective_config, limit=hydrate_limit)
     if hydrated_count:
-        print(f"Hydrated {hydrated_count} eligible articles with full content before labeling.")
+        print(f"Hydrated {hydrated_count} keyword-approved articles with full content.")
 
-    label_articles(feed_profile, effective_config, limit=limit)
-
-    unprocessed = database.get_unprocessed_articles(feed_profile, limit)
+    unprocessed = database.get_unprocessed_articles(feed_profile, processing_limit)
     processed_count = 0
     if not unprocessed:
         print("No keyword-approved articles to process.")
@@ -464,11 +564,15 @@ def process_articles(feed_profile, effective_config, limit=1000):
     print(f"Found {len(unprocessed)} articles to process (Limit: {limit}).")
     for article in unprocessed:
         print(f"Processing article ID: {article['id']} - {article['url'][:50]}...")
+        article_content = (article.get("raw_content") or article.get("abstract") or "")[:4000]
+        if not article_content:
+            print(f"Skipping article {article['id']} due to missing content and abstract.")
+            continue
 
         # 1. Summarize using Deepseek Chat
         # Format the potentially profile-specific summary prompt
         summary_prompt = summary_prompt_template.format(
-            article_content=article["raw_content"][:4000]  # Limit context
+            article_content=article_content  # Limit context
         )
         summary = call_deepseek_chat(summary_prompt, model=chat_model)
 

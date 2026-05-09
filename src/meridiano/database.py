@@ -339,21 +339,22 @@ def add_article(
             return None
 
 
-def get_articles_pending_content_scrape(feed_profile: str, limit: int = 50) -> List[Dict[str, Any]]:
+def get_articles_pending_content_scrape(
+    feed_profile: str,
+    limit: int = 50,
+    require_keyword_match: bool = True,
+) -> List[Dict[str, Any]]:
     """Gets eligible articles that still need the expensive full-content scrape."""
     with get_session() as session:
-        statement = (
-            select(Article)
-            .where(
-                and_(
-                    Article.feed_profile == feed_profile,
-                    Article.eligibility_status == "eligible",
-                    or_(Article.raw_content.is_(None), Article.raw_content == ""),
-                )
-            )
-            .order_by(desc(Article.published_date), desc(Article.fetched_at))
-            .limit(limit)
-        )
+        filters = [
+            Article.feed_profile == feed_profile,
+            Article.eligibility_status == "eligible",
+            or_(Article.raw_content.is_(None), Article.raw_content == ""),
+        ]
+        if require_keyword_match:
+            filters.append(Article.keyword_match.is_(True))
+
+        statement = select(Article).where(and_(*filters)).order_by(desc(Article.published_date), desc(Article.fetched_at)).limit(limit)
         articles = session.exec(statement).all()
         return [_article_to_dict(article) for article in articles]
 
@@ -364,17 +365,53 @@ def update_article_content_scrape(
     image_url: Optional[str] = None,
     abstract: Optional[str] = None,
     scrape_status: Optional[str] = None,
+    metadata: Optional[Dict[str, Any]] = None,
 ) -> None:
     """Stores results from the expensive full-article scrape stage."""
     with get_session() as session:
         statement = select(Article).where(Article.id == article_id)
         article = session.exec(statement).first()
         if article:
+            metadata = metadata or {}
             article.raw_content = raw_content
             if image_url:
                 article.image_url = image_url
-            if abstract and not article.abstract:
-                article.abstract = abstract
+            resolved_abstract = metadata.get("abstract") or abstract
+            if resolved_abstract and not article.abstract:
+                article.abstract = resolved_abstract
+            resolved_title = metadata.get("title")
+            if resolved_title and (not article.title or article.title.startswith("Manually Added")):
+                article.title = resolved_title
+            if metadata.get("doi"):
+                article.doi = metadata["doi"]
+            if metadata.get("journal_name"):
+                article.journal_name = metadata["journal_name"]
+            if metadata.get("authors"):
+                article.authors = json.dumps(metadata["authors"], ensure_ascii=False)
+            if metadata.get("article_type"):
+                article.article_type = metadata["article_type"]
+            if metadata.get("publication_date_verified"):
+                article.publication_date_verified = metadata["publication_date_verified"]
+            if metadata.get("publication_year") is not None:
+                article.publication_year = metadata["publication_year"]
+            if metadata.get("is_review") is not None:
+                article.is_review = metadata["is_review"]
+            if metadata.get("scientific_domain"):
+                article.scientific_domain = metadata["scientific_domain"]
+            if metadata.get("subdomain"):
+                article.subdomain = metadata["subdomain"]
+            if "novelty_window_match" in metadata:
+                article.novelty_window_match = metadata.get("novelty_window_match")
+            if "matrix_window_match" in metadata:
+                article.matrix_window_match = metadata.get("matrix_window_match")
+            if metadata.get("eligibility_status"):
+                article.eligibility_status = metadata["eligibility_status"]
+            if metadata.get("eligibility_reason"):
+                article.eligibility_reason = metadata["eligibility_reason"]
+            if metadata.get("editorial_block"):
+                article.editorial_block = metadata["editorial_block"]
+            article.metadata_status = metadata.get("metadata_status") or article.metadata_status or "rss_ingested"
+            article.metadata_extracted_at = datetime.now()
             article.scrape_status = scrape_status or ("scraped" if raw_content else "scrape_failed")
             session.add(article)
             session.commit()
@@ -509,8 +546,10 @@ def get_unprocessed_articles(feed_profile: str, limit: int = 50) -> List[Dict[st
             .where(
                 and_(
                     Article.processed_at.is_(None),
-                    Article.raw_content.is_not(None),
-                    Article.raw_content != "",
+                    or_(
+                        and_(Article.raw_content.is_not(None), Article.raw_content != ""),
+                        and_(Article.abstract.is_not(None), Article.abstract != ""),
+                    ),
                     Article.keyword_match.is_(True),
                     Article.feed_profile == feed_profile,
                 )
@@ -531,12 +570,13 @@ def get_articles_for_keyword_filter(feed_profile: str, limit: int = 50) -> List[
             .where(
                 and_(
                     Article.keyword_checked_at.is_(None),
-                    Article.raw_content.is_not(None),
-                    Article.raw_content != "",
+                    Article.eligibility_status == "eligible",
+                    Article.title.is_not(None),
+                    Article.title != "",
                     Article.feed_profile == feed_profile,
                 )
             )
-            .order_by(desc(Article.fetched_at))
+            .order_by(desc(Article.published_date), desc(Article.fetched_at))
             .limit(limit)
         )
 

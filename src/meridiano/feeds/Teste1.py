@@ -9,8 +9,8 @@ PUBLICATION_WINDOW_DAYS = 7
 TARGET_WEEKLY_ARTICLE_COUNT = 10
 
 RSS_FEEDS = [
-    "http://rss.sciencedirect.com/publication/science/0022328X",  # Journal of Organometallic Chemistry
-    "http://rss.sciencedirect.com/publication/science/13595113",  # Process Biochemistry
+    "http://feeds.nature.com/ncb/rss/current",  # Nature Cell Biology
+    "http://feeds.nature.com/nchem/rss/current",  # Nature Chemistry
 ]
 
 FEED_KEYWORDS = [
