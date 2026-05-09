@@ -1,33 +1,37 @@
 /* simple-meridian/static/style.css */
 
 body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol"; /* Common system font stack */
+    font-family: 'EB Garamond', serif; /* Academic reading serif */
     line-height: 1.6;
     margin: 0;
     padding: 0;
-    background-color: #f8f9fa;
-    color: #212529; /* Slightly darker text */
+    background-color: #FDFBF7; /* Parchment/Ivory */
+    /* Subtle 30% grid */
+    background-image: linear-gradient(rgba(209, 209, 209, 0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(209, 209, 209, 0.3) 1px, transparent 1px);
+    background-size: 20px 20px;
+    color: #1A1A1A; /* India Ink black */
 }
 
 .container {
-    max-width: 800px;
+    max-width: 900px;
     margin: 20px auto;
-    padding: 25px;
-    background-color: #ffffff;
-    border-radius: 8px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.08);
+    padding: 30px;
+    background-color: #FDFBF7; /* Match body for seamless paper look */
+    border: 1px solid #D1D1D1;
+    box-shadow: 2px 2px 0px rgba(0,0,0,0.1); /* Hard shadow for physical feel */
 }
 
 /* --- Header Styling --- */
 .main-header {
-    background-color: #ffffff;
-    border-bottom: 1px solid #dee2e6;
-    padding: 10px 0;
-    margin-bottom: 25px; /* Space below header */
+    background-color: #FDFBF7;
+    border-bottom: 3px double #1A1A1A; /* Double line for classic look */
+    border-top: 5px solid #1A1A1A;
+    padding: 20px 0;
+    margin-bottom: 30px; 
 }
 
 .header-content {
-    max-width: 800px;
+    max-width: 900px;
     margin: 0 auto;
     display: flex;
     justify-content: space-between;
@@ -35,13 +39,22 @@ body {
 }
 
 .logo {
-    font-size: 1.5em;
-    font-weight: 600;
-    color: #495057;
+    font-family: 'Playfair Display', serif; /* Masterbrand */
+    font-size: 2.5em;
+    font-weight: 700;
+    color: #1A1A1A;
     text-decoration: none;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+.logo-v {
+    font-size: 1.3em;
+    font-style: italic;
+    margin-right: 2px;
+    border-bottom: 2px solid #2D4B73;
 }
 .logo:hover {
-    color: #0056b3;
+    color: #2D4B73;
 }
 
 .main-nav {
@@ -53,8 +66,10 @@ body {
 
 .main-nav a {
     text-decoration: none;
-    color: #495057;
-    font-size: 1.0em;
+    font-family: 'Special Elite', monospace; /* Typewriter feel */
+    color: #1A1A1A;
+    font-size: 0.9em;
+    text-transform: uppercase;
     padding: 5px 0;
     border-bottom: 2px solid transparent;
     transition: color 0.2s ease, border-color 0.2s ease;
@@ -62,8 +77,8 @@ body {
 
 .main-nav a:hover,
 .main-nav a.active {
-    color: #0056b3;
-    border-bottom-color: #007bff;
+    color: #2D4B73; /* Indigo blue */
+    border-bottom-color: #2D4B73;
 }
 
 .main-nav a.active {
@@ -77,32 +92,40 @@ body {
 
 
 h1 {
-    color: #343a40; /* Darker heading */
-    border-bottom: 2px solid #eee;
+    color: #1A1A1A; 
+    border-bottom: 3px double #1A1A1A;
     padding-bottom: 10px;
     margin-top: 0;
-    font-size: 1.8em;
+    font-family: 'EB Garamond', serif;
+    font-weight: bold;
+    font-size: 2.2em;
 }
 
 h2 {
-    color: #495057;
+    color: #1A1A1A;
     margin-top: 1.5em;
+    font-family: 'EB Garamond', serif;
+    font-weight: bold;
+    border-bottom: 1px solid #1A1A1A;
 }
 
 h3 {
-    color: #495057;
+    color: #1A1A1A;
     margin-top: 1.2em;
+    font-family: 'EB Garamond', serif;
 }
 
 .timestamp {
-    color: #6c757d;
+    font-family: 'Special Elite', monospace;
+    color: #2D4B73; /* Indigo blue accent */
     font-size: 0.9em;
     margin-bottom: 15px;
+    text-transform: uppercase;
 }
 
 hr {
     border: none;
-    border-top: 1px solid #eee;
+    border-top: 1px solid #1A1A1A;
     margin: 20px 0;
 }
 
@@ -134,17 +157,20 @@ hr {
 .article-link, .article-link-original {
     display: inline;
     text-decoration: none;
-    color: #0056b3; /* Slightly darker blue for links */
-    font-weight: 500; /* Slightly bolder titles */
+    color: #1A1A1A; /* India Ink */
+    font-family: 'EB Garamond', serif;
+    font-size: 1.4em;
+    font-weight: bold;
 }
 .article-link:hover, .article-link-original:hover {
     text-decoration: underline;
-    color: #003d80;
+    color: #2D4B73; /* Indigo blue */
 }
 
 .article-meta {
     font-size: 0.85em;
-    color: #6c757d; /* Gray for metadata */
+    font-family: 'Special Elite', monospace;
+    color: #555; /* Muted typewriter */
     display: block; /* Put metadata on new line */
 }
 /* --- End Article List Styling --- */
@@ -924,4 +950,134 @@ blockquote {
     font-size: 0.9em;
     color: #6c757d; /* Muted text color */
     margin-left: 5px;
+}
+
+/* --- Old School Gazette Custom Styles --- */
+
+.marginalia-ai-summary {
+    float: right;
+    width: 28%;
+    margin-left: 20px;
+    padding: 15px;
+    background-color: transparent;
+    border-left: 1px solid #D1D1D1;
+    font-family: 'Architects Daughter', cursive;
+    font-size: 1.1em;
+    color: #444;
+    line-height: 1.4;
+    transform: rotate(-1deg);
+    box-sizing: border-box;
+}
+
+.marginalia-title {
+    font-family: 'Special Elite', monospace;
+    font-size: 0.7em;
+    text-transform: uppercase;
+    color: #1A1A1A;
+    border-bottom: 1px dashed #D1D1D1;
+    margin-bottom: 10px;
+    padding-bottom: 5px;
+    transform: none;
+    letter-spacing: 1px;
+}
+
+/* Vetor Profile (Manchete principal, colunas estreitas) */
+.profile-vetor {
+    display: block; 
+    border-bottom: 3px double #1A1A1A;
+    padding-bottom: 20px;
+    margin-bottom: 30px;
+}
+.profile-vetor .article-image-container {
+    width: 100%;
+    height: auto;
+    max-height: 250px;
+    margin-bottom: 15px;
+    border-radius: 0;
+    border: 1px solid #1A1A1A;
+}
+.profile-vetor .article-image {
+    width: 100%;
+    height: auto;
+    object-fit: cover;
+    border-radius: 0;
+}
+.profile-vetor .article-link-wrapper {
+    text-align: center;
+    margin-bottom: 15px;
+}
+.profile-vetor .article-link {
+    font-size: 2.2em;
+    line-height: 1.2;
+}
+.profile-vetor .article-text-content {
+    column-count: 2;
+    column-gap: 20px;
+    column-rule: 1px solid #D1D1D1;
+    text-align: justify;
+}
+.profile-vetor .marginalia-ai-summary {
+    float: none;
+    width: 100%;
+    column-span: all;
+    border-left: none;
+    border-top: 1px dashed #1A1A1A;
+    margin-left: 0;
+    transform: none;
+    margin-top: 15px;
+}
+
+/* Matriz Profile (Ficha catalográfica) */
+.profile-matriz {
+    display: flex;
+    border: 2px solid #1A1A1A;
+    padding: 20px;
+    background-color: #FDFBF7;
+    box-shadow: 4px 4px 0px rgba(26, 26, 26, 0.2);
+    margin-bottom: 25px;
+    align-items: flex-start;
+}
+.profile-matriz .article-link {
+    font-family: 'Special Elite', monospace;
+    text-transform: uppercase;
+    font-size: 1.1em;
+    letter-spacing: 1px;
+}
+.profile-matriz .article-meta {
+    font-family: 'Special Elite', monospace;
+    display: inline-block;
+    border: 1px solid #1A1A1A;
+    padding: 3px 8px;
+    margin-top: 10px;
+    background-color: #fff;
+}
+.profile-matriz .marginalia-ai-summary {
+    float: none;
+    width: 100%;
+    border-left: none;
+    border-top: 2px solid #1A1A1A;
+    margin-top: 15px;
+    margin-left: 0;
+    transform: none;
+    padding-left: 0;
+}
+
+/* Horizonte / Esfera Profile (Panorama denso) */
+.profile-horizonte, .profile-esfera {
+    display: flex;
+    flex-direction: row;
+    border-top: 1px solid #1A1A1A;
+    border-bottom: 1px solid #1A1A1A;
+    padding: 15px 0;
+    margin-bottom: -1px; /* Overlap borders */
+}
+.profile-horizonte .article-image-container, .profile-esfera .article-image-container {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    border: 1px solid #1A1A1A;
+}
+.profile-horizonte .article-text-content, .profile-esfera .article-text-content {
+    font-size: 0.9em;
+    text-align: justify;
 }

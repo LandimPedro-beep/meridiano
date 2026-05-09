@@ -69,7 +69,7 @@ Critérios:
 
 ---
 
-#### 3. BLOCO HORIZONTE - GLOBAL (PANORAMA CIENTÍFICO)
+#### 3. BLOCO ESFERA - GLOBAL (PANORAMA CIENTÍFICO)
 
 Conteúdos novos de todas as áreas da química, sem relação pessoal com a área de pesquisa do usuário, apenas para atualizações semanais de artigos cientificos diversos
 

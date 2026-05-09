@@ -2,8 +2,7 @@
 <header class="main-header">
     <div class="header-content">
         <a href="{{ url_for('index', **profile_params) }}" class="logo">
-            <img src="{{ url_for('static', filename='icons/icon.svg') }}" alt="Meridiano Icon" style="height: 1.2em; vertical-align: middle; margin-right: 8px;">
-            Meridiano
+            <span class="logo-v">V</span>értice
         </a>
         <nav class="main-nav">
             <a href="{{ url_for('index', **profile_params) }}" class="{{ 'active' if request.endpoint in ['index', 'view_brief'] else '' }}">Briefs</a>
