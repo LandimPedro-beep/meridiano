@@ -93,6 +93,20 @@ def test_full_workflow(mock_fetch, mock_parse, setup_integration):
     mock_fetch.return_value = {
         "content": "This is the content of the test article. It is very interesting.",
         "og_image": "http://example.com/image.jpg",
+        "metadata": {
+            "title": "Publisher Title",
+            "doi": "10.1000/test-doi",
+            "journal_name": "Journal of Biochemistry",
+            "authors": ["Alice Example", "Bob Example"],
+            "abstract": "Biochemistry study about proteins.",
+            "article_type": "review",
+            "publication_date_verified": datetime.now() - timedelta(days=1),
+            "publication_year": datetime.now().year,
+            "is_review": True,
+            "scientific_domain": "química",
+            "subdomain": "bioquímica",
+            "metadata_status": "publisher_metadata_extracted",
+        },
     }
 
     # Mock DeepSeek Chat (Summarization, Rating, Analysis, Synthesis)
@@ -167,6 +181,13 @@ def test_full_workflow(mock_fetch, mock_parse, setup_integration):
         assert article.keyword_match is True
         assert article.processed_content == "This is a summary."
         assert article.embedding is not None
+        assert article.doi == "10.1000/test-doi"
+        assert article.journal_name == "Journal of Biochemistry"
+        assert article.article_type == "review"
+        assert article.is_review is True
+        assert article.scientific_domain == "química"
+        assert article.subdomain == "bioquímica"
+        assert article.metadata_status == "publisher_metadata_extracted"
 
     # 3. Rate
     class DummyConfigRate(DummyConfig):
@@ -405,7 +426,7 @@ def test_feed_feedback_summary(mock_fetch, mock_parse, setup_integration):
     assert row["stored_count"] == 3
     assert row["processed_count"] == 1
     assert row["keyword_accepted_count"] == 1
-    assert row["keyword_rejected_count"] == 1
+    assert row["keyword_rejected_count"] == 2
 
 
 def test_empty_feed_profile(setup_integration):
